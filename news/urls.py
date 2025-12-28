@@ -1,8 +1,7 @@
 from django.urls import path
-from . import views  # Make sure you have at least one view defined
+from .views import ArticleListView, ArticleCreateView
 
 urlpatterns = [
-    # If you don't have views yet, leave it empty like this [] 
-    # but the variable MUST exist.
-    # path('register/', views.RegisterView.as_view(), name='register'),
+    path('', ArticleListView.as_view(), name='article-list'),
+    path('create/', ArticleCreateView.as_view(), name='article-create'),
 ]

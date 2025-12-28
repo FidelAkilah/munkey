@@ -1,59 +1,37 @@
+/* eslint-disable @next/next/no-html-link-for-pages */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/app/page.tsx
-import MUNMap from "../components/MUNMap";
 import Link from 'next/link';
 
-// Fetching both News and Conferences from Django
-async function getData() {
-  const [newsRes, confRes] = await Promise.all([
-    fetch('http://localhost:8000/api/news/', { cache: 'no-store' }),
-    fetch('http://localhost:8000/api/conferences/', { cache: 'no-store' })
-  ]);
-  
-  return {
-    articles: newsRes.ok ? await newsRes.json() : [],
-    conferences: confRes.ok ? await confRes.json() : []
-  };
+async function getNews() {
+  const res = await fetch('http://localhost:8000/api/news/', { cache: 'no-store' });
+  return res.ok ? res.json() : [];
 }
 
 export default async function Home() {
-  const { articles, conferences } = await getData();
+  const news = await getNews();
 
   return (
-    <main className="max-w-7xl mx-auto p-8 space-y-12">
-      {/* 1. Header Section */}
-      <header>
-        <h1 className="text-5xl font-black text-slate-900 tracking-tight">Global MUN Hub</h1>
-        <p className="text-slate-500 mt-2 text-xl">Breaking the silos between city circuits.</p>
-      </header>
-
-      {/* 2. Global Map Section (The City Silo Breaker) */}
-      <section>
-        <div className="flex justify-between items-end mb-4">
-          <h2 className="text-2xl font-bold">Live Conference Map</h2>
-          <span className="text-sm text-blue-600 font-semibold">{conferences.length} Live Circuits</span>
-        </div>
-        <MUNMap markers={conferences} />
-      </section>
-
-      {/* 3. News Bento Grid */}
-      <section>
-        <h2 className="text-2xl font-bold mb-6">Latest from the Circuit</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {articles.map((article: any, index: number) => (
-            <Link 
-              key={article.id} 
-              href={`/news/${article.slug}`}
-              className={`group relative rounded-3xl overflow-hidden shadow-lg transition-transform hover:scale-[1.02] bg-slate-200 ${index === 0 ? 'md:col-span-2 md:row-span-1 h-[400px]' : 'h-[400px]'}`}
-            >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent p-8 flex flex-col justify-end">
-                <span className="text-xs font-bold text-amber-400 uppercase mb-2">{article.category}</span>
-                <h2 className="text-2xl font-bold text-white">{article.title}</h2>
-                <p className="text-slate-300 text-sm mt-2 line-clamp-2">{article.excerpt}</p>
-              </div>
-            </Link>
+    <main className="p-8">
+      <h1 className="text-3xl font-bold mb-6">Global MUN News</h1>
+      
+      {news.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {news.map((item: any) => (
+            <div key={item.id} className="p-4 border rounded-xl bg-white shadow">
+              <h2 className="font-bold">{item.title}</h2>
+              <p className="text-sm text-slate-600 mt-2">{item.content.substring(0, 100)}...</p>
+            </div>
           ))}
         </div>
-      </section>
+      ) : (
+        <div className="p-10 text-center bg-slate-100 rounded-3xl">
+          <p className="text-slate-500">No news found. Are you sure the Django server is running at 127.0.0.1:8000?</p>
+          <a href="/news/add" className="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-full">
+            Add First News
+          </a>
+        </div>
+      )}
     </main>
   );
 }

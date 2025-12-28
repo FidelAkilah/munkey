@@ -15,8 +15,6 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 
-from django.contrib import admin
-from django.urls import path
 
 # core/urls.py
 from django.contrib import admin
@@ -24,7 +22,8 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    
+    path('auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.jwt')),
     # Modular Routing
     path('api/users/', include('accounts.urls')),
     path('api/news/', include('news.urls')),
