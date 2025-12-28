@@ -36,7 +36,9 @@ callbacks: {
         if (user) return { ...token, ...user };
         return token;
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async session({ session, token }: { session: any; token: any }) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         session.user = token as any;
         return session;
     },

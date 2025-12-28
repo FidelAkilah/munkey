@@ -47,8 +47,8 @@ INSTALLED_APPS = [
     "directory",
     "news",
     'rest_framework',
-    'rest_framework_simplejwt'
-    'djoser'
+    'rest_framework_simplejwt',
+    'djoser',
     'corsheaders',
 ]
 

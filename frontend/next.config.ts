@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  images: {
+    remotePatterns: [{ hostname: "localhost" }, { hostname: "res.cloudinary.com" }],
+  },
+  // Next.js 16 optimization
+  reactCompiler: true, 
 };
 
 export default nextConfig;
