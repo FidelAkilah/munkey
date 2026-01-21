@@ -18,7 +18,7 @@ class ArticleCreateView(generics.CreateAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     # Only logged-in users can reach this view
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAdminUser]
 
     def perform_create(self, serializer):
         # Automatically set the author to the logged-in user

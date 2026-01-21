@@ -11,11 +11,22 @@ export default function Home() {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 1. Restore the Fetch Logic
+  // 🔴 EMAIL REDIRECT LOGIC
+  const handleEmailRedirect = () => {
+    const subject = encodeURIComponent("MunKey News Submission");
+    const body = encodeURIComponent(
+      "Hello MunKey Team,\n\nI would like to submit a story regarding..."
+    );
+    window.location.href = `mailto:admin@munkey.com?subject=${subject}&body=${body}`;
+  };
+
+  // 1. FETCH NEWS
   useEffect(() => {
     async function fetchNews() {
       try {
-        const res = await fetch("http://localhost:8000/api/news/", { cache: "no-store" });
+        const res = await fetch("http://localhost:8000/api/news/", {
+          cache: "no-store",
+        });
         if (res.ok) {
           const data = await res.json();
           setNews(data);
@@ -39,12 +50,12 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-white selection:bg-cyan-500/20">
       <Navbar />
-      
-      {/* HERO SECTION */}
-      <section className="relative pt-44 pb-16 overflow-hidden flex items-center min-h-[600px]">
+
+      {/* 1. HERO SECTION */}
+      <section className="relative pt-44 pb-16 overflow-hidden flex items-center min-h-[600px] bg-slate-900">
         <div className="absolute inset-0 z-0">
           <Image
-            src="/UN-HQ-Flagswide.png" 
+            src="/UN-HQ-Flagswide.png"
             alt="UN Flags"
             fill
             className="object-cover scale-105"
@@ -53,108 +64,113 @@ export default function Home() {
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px]" />
         </div>
 
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
           className="max-w-7xl mx-auto px-6 relative z-10 text-center text-white"
         >
           <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight leading-tight">
-            One Stop for <span className="font-serif italic font-light text-blue-300">MUN Excellence.</span>
+            One Stop for{" "}
+            <span className="font-serif italic font-light text-blue-300">
+              MUN Excellence.
+            </span>
           </h1>
-          <p className="text-lg md:text-xl text-slate-100 max-w-3xl mx-auto leading-relaxed mb-10 font-medium opacity-90">
-            Welcome to MunKey, your one-stop for MUN-related information and skill-sharing. 
-            Access nationwide articles and our free library of videos to expand your horizons.
-          </p>
+
           <div className="flex flex-wrap justify-center gap-5">
-            <Link href="/skills" className="px-12 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 hover:scale-105 transition-all shadow-xl shadow-blue-900/40">
+            <Link
+              href="/skills"
+              className="px-12 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 transition-all"
+            >
               Explore Skills
             </Link>
-            <Link href="/news/add" className="px-12 py-4 border-2 border-white/30 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold hover:bg-white hover:text-slate-900 hover:scale-105 transition-all">
-              Share Your Story
-            </Link>
+
+            {/* 🔴 EMAIL CTA */}
+            <button
+              onClick={handleEmailRedirect}
+              className="px-12 py-4 border-2 border-white/30 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold hover:bg-white hover:text-slate-900 transition-all"
+            >
+              Submit a Story
+            </button>
           </div>
         </motion.div>
       </section>
 
-      {/* MISSION BAR */}
-      <section className="bg-white py-14 border-b border-slate-100 relative z-20">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
-            {missionItems.map((item, idx) => (
-              <motion.div key={idx} whileHover={{ y: -5 }} className="flex items-center gap-5 group cursor-default">
-                <div className={`w-16 h-16 flex-shrink-0 ${item.bg} border ${item.border} ${item.text} rounded-2xl flex items-center justify-center text-3xl transition-all duration-300 ${item.glow}`}>
-                  {item.icon}
-                </div>
-                <div>
-                  <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em] mb-1">{item.label}</p>
-                  <p className="text-sm font-bold text-slate-900 leading-tight">{item.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+      {/* 2. SUBMISSION CALLOUT */}
+      <section className="py-16 bg-blue-50">
+        <div className="max-w-4xl mx-auto px-6 text-center">
+          <h2 className="text-3xl font-bold text-slate-900 mb-4">
+            Have a story from your circuit?
+          </h2>
+          <p className="text-slate-600 mb-8 leading-relaxed">
+            While only MunKey Admins can publish directly, we welcome guest
+            contributions. Send your draft and images to our editorial team for
+            review.
+          </p>
+          <button
+            onClick={handleEmailRedirect}
+            className="text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
+          >
+            Email Submission Guidelines →
+          </button>
         </div>
       </section>
 
-      {/* 2. RESTORED NEWS FEED LOGIC */}
+      {/* 3. MISSION BAR */}
+      <section className="bg-white py-14 border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+          {missionItems.map((item, idx) => (
+            <motion.div
+              key={idx}
+              whileHover={{ y: -5 }}
+              className="flex items-center gap-5 group"
+            >
+              <div
+                className={`w-16 h-16 ${item.bg} border ${item.border} ${item.text} rounded-2xl flex items-center justify-center text-3xl ${item.glow}`}
+              >
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-[10px] font-black uppercase text-slate-400 tracking-[0.2em]">
+                  {item.label}
+                </p>
+                <p className="text-sm font-bold text-slate-900">{item.desc}</p>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. NEWS FEED (UNCHANGED LOGIC) */}
       <main className="max-w-7xl mx-auto px-6 py-24">
         <div className="flex items-end justify-between mb-16">
-          <h2 className="text-5xl font-bold text-slate-900 tracking-tighter italic">Latest from the circuit.</h2>
-          <Link href="/news" className="text-sm font-bold text-blue-600 hover:underline transition-all pb-1">
+          <h2 className="text-5xl font-bold italic">Latest from the circuit.</h2>
+          <Link href="/news" className="text-sm font-bold text-blue-600">
             View All Stories →
           </Link>
         </div>
-        
+
         {loading ? (
-          <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-400 italic animate-pulse">
+          <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-[3rem] animate-pulse">
             Fetching the latest diplomatic updates...
           </div>
         ) : news.length === 0 ? (
-          <div className="h-64 flex items-center justify-center border-2 border-dashed border-slate-200 rounded-[3rem] text-slate-400 italic">
-            No stories found. Be the first to report from your circuit.
+          <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-[3rem]">
+            No stories found.
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            {news.map((post: any, index: number) => (
-              <motion.div 
+            {news.map((post, index) => (
+              <motion.div
                 key={post.id}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                className={`group bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 flex flex-col justify-between ${
-                  index === 0 ? "md:col-span-8 md:row-span-1 min-h-[450px]" : "md:col-span-4 min-h-[280px]"
+                className={`bg-white rounded-[2.5rem] p-8 border ${
+                  index === 0 ? "md:col-span-8" : "md:col-span-4"
                 }`}
               >
-                <div>
-                  <div className="flex items-center gap-3 mb-6">
-                    <span className="bg-cyan-500/10 text-cyan-600 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-full">
-                      {post.category || "General"}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-bold uppercase">
-                      {new Date(post.created_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <h2 className={`font-black text-slate-900 group-hover:text-blue-600 transition-colors leading-tight ${
-                    index === 0 ? "text-5xl" : "text-2xl"
-                  }`}>
-                    {post.title}
-                  </h2>
-                  <p className="text-slate-500 mt-6 line-clamp-3 leading-relaxed text-lg">
-                    {post.content}
-                  </p>
-                </div>
-                
-                <div className="mt-8 flex items-center justify-between border-t border-slate-50 pt-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-[10px]">
-                      {post.author_name?.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-sm font-black text-slate-700">{post.author_name}</span>
-                  </div>
-                  <span className="text-xs font-black text-blue-600 tracking-tighter opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
-                    READ STORY →
-                  </span>
-                </div>
+                <h3 className="font-black text-2xl">{post.title}</h3>
+                <p className="mt-4 text-slate-600 line-clamp-3">
+                  {post.content}
+                </p>
               </motion.div>
             ))}
           </div>
