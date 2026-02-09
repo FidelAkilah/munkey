@@ -25,11 +25,18 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-oygc#6g^wtu0_&&okf-fts4!u6n@hxlfxk@iozyqyks&p1yf_!"
-DATABASE_URL= 'postgres://mun_admin:munjayaabadi@127.0.0.1:5432/mun_hub_db'
+
+DATABASE_URL= env("DATABASE_URL")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
+SECRET_KEY = env("SECRET_KEY")
 
+SIMPLE_JWT = {
+    'SIGNING_KEY': env("SIMPLE_JWT_SECRET_KEY", default=SECRET_KEY),
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
+    'AUTH_HEADER_TYPES': ('Bearer',), # Matches NextAuth format
+}
 ALLOWED_HOSTS = []
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -139,16 +146,11 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'core.authentication.NextAuthJWTAuthentication',
     ),
 }
 
 
-SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
-    'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
-    'AUTH_HEADER_TYPES': ('Bearer',), # Matches NextAuth format
-}
 
 # Djoser settings for registration and password reset
 DJOSER = {

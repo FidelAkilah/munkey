@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function proxy(request: NextRequest) {
-  const token = request.cookies.get("session_token");
+export async function proxy(request: NextRequest) {
+  // Check for NextAuth session by looking for session cookies
+  // NextAuth stores session in cookies named next-auth.*
+  const nextAuthCookies = request.cookies.getAll().filter(cookie => 
+    cookie.name.startsWith("next-auth.")
+  );
 
-  // If trying to add news without a token, redirect to login
-  if (request.nextUrl.pathname.startsWith("/news/add") && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  // If no NextAuth session cookies, redirect to login
+  if (request.nextUrl.pathname.startsWith("/news/add") && nextAuthCookies.length === 0) {
+    return NextResponse.redirect(new URL("/login?callbackUrl=/news/add", request.url));
   }
 
   return NextResponse.next();

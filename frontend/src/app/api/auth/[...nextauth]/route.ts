@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const handlers = NextAuth({
   providers: [
     Credentials({
       name: "MUN Account",
@@ -41,6 +41,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             
             const user = await userRes.json();
             
+            // Determine role: Admin if role='AD' or is_superuser=true
             const role = user.is_superuser ? 'AD' : (user.role || 'SR');
             
             return { 
@@ -95,4 +96,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   debug: true,
 });
+
+export { handlers as GET, handlers as POST };
 

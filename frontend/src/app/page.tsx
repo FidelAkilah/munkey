@@ -2,23 +2,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Navbar from "../components/Navbar";
 import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 
 export default function Home() {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // 🔴 EMAIL REDIRECT LOGIC
-  const handleEmailRedirect = () => {
-    const subject = encodeURIComponent("MunKey News Submission");
-    const body = encodeURIComponent(
-      "Hello MunKey Team,\n\nI would like to submit a story regarding..."
-    );
-    window.location.href = `mailto:admin@munkey.com?subject=${subject}&body=${body}`;
-  };
+  const { data: session } = useSession();
+  const isAuthenticated = session?.user !== undefined;
 
   // 1. FETCH NEWS
   useEffect(() => {
@@ -49,7 +42,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-white selection:bg-cyan-500/20">
-      <Navbar />
 
       {/* 1. HERO SECTION */}
       <section className="relative pt-44 pb-16 overflow-hidden flex items-center min-h-[600px] bg-slate-900">
@@ -85,13 +77,22 @@ export default function Home() {
               Explore Skills
             </Link>
 
-            {/* 🔴 EMAIL CTA */}
-            <button
-              onClick={handleEmailRedirect}
-              className="px-12 py-4 border-2 border-white/30 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold hover:bg-white hover:text-slate-900 transition-all"
-            >
-              Submit a Story
-            </button>
+            {/* NEW SUBMISSION FLOW */}
+            {isAuthenticated ? (
+              <Link
+                href="/news/add"
+                className="px-12 py-4 border-2 border-white/30 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold hover:bg-white hover:text-slate-900 transition-all"
+              >
+                Submit a Story
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="px-12 py-4 border-2 border-white/30 bg-white/10 backdrop-blur-md text-white rounded-2xl font-bold hover:bg-white hover:text-slate-900 transition-all"
+              >
+                Login to Submit
+              </Link>
+            )}
           </div>
         </motion.div>
       </section>
@@ -103,16 +104,26 @@ export default function Home() {
             Have a story from your circuit?
           </h2>
           <p className="text-slate-600 mb-8 leading-relaxed">
-            While only MunKey Admins can publish directly, we welcome guest
-            contributions. Send your draft and images to our editorial team for
-            review.
+            {isAuthenticated 
+              ? "Share your MUN experiences with the community. Submit your article below and our editorial team will review it for publication."
+              : "We welcome guest contributions from delegates across Indonesia. Login to submit your story for review."
+            }
           </p>
-          <button
-            onClick={handleEmailRedirect}
-            className="text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
-          >
-            Email Submission Guidelines →
-          </button>
+          {isAuthenticated ? (
+            <Link
+              href="/news/add"
+              className="inline-block text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
+            >
+              Submit Your Article →
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="inline-block text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
+            >
+              Login to Submit →
+            </Link>
+          )}
         </div>
       </section>
 
@@ -141,7 +152,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. NEWS FEED (UNCHANGED LOGIC) */}
+      {/* 4. NEWS FEED */}
       <main className="max-w-7xl mx-auto px-6 py-24">
         <div className="flex items-end justify-between mb-16">
           <h2 className="text-5xl font-bold italic">Latest from the circuit.</h2>
@@ -156,7 +167,7 @@ export default function Home() {
           </div>
         ) : news.length === 0 ? (
           <div className="h-64 flex items-center justify-center border-2 border-dashed rounded-[3rem]">
-            No stories found.
+            No stories found. Be the first to submit!
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
@@ -179,3 +190,4 @@ export default function Home() {
     </div>
   );
 }
+
