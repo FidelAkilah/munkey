@@ -33,5 +33,3 @@ export const metadata: Metadata = {
   title: "MUNKEY - One Stop for MUN Excellence",
   description: "Connecting Indonesia's MUN circuit with news, guides, and skill sharing.",
 };
-
-
