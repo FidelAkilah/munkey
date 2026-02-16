@@ -2,7 +2,7 @@
 // src/app/skills/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
+import Navbar from "../components/Navbar";
 
 export default function SkillsPage() {
   const [categories, setCategories] = useState<any[]>([]);
