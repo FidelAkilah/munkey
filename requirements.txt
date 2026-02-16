@@ -1,0 +1,22 @@
+# Django Core
+Django==5.1.11
+django-environ==0.10.0
+
+# REST Framework & Auth
+djangorestframework==3.15.2
+djangorestframework-simplejwt==5.5.1
+djoser==2.3.3
+
+# CORS
+django-cors-headers==4.7.0
+
+# Database
+psycopg2-binary==2.9.10
+
+# Production Server
+gunicorn==23.0.0
+whitenoise==6.9.0
+
+# Python Utilities
+PyYAML==6.0.2
+
