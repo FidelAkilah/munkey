@@ -1,9 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 
-export default function AddNewsPage() {
+function AddNewsForm() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -133,7 +133,7 @@ export default function AddNewsPage() {
   }
 
   return (
-    <main className="max-w-4xl mx-auto p-12">
+    <>
       <h1 className="text-4xl font-black mb-2">Submit Your Story</h1>
       <p className="text-slate-500 mb-8">
         Share your MUN experiences with the community. Your article will be reviewed by our team before publication.
@@ -222,6 +222,20 @@ export default function AddNewsPage() {
           By submitting, you agree that your article will be reviewed by our editorial team before publication.
         </p>
       </form>
+    </>
+  );
+}
+
+export default function AddNewsPage() {
+  return (
+    <main className="max-w-4xl mx-auto p-12">
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      }>
+        <AddNewsForm />
+      </Suspense>
     </main>
   );
 }
