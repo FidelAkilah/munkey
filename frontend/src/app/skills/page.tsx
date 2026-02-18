@@ -2,7 +2,7 @@
 // src/app/skills/page.tsx
 "use client";
 import { useState, useEffect } from "react";
-import Navbar from "../../components/Navbar";
+
 
 export default function SkillsPage() {
   const [categories, setCategories] = useState<any[]>([]);
@@ -16,7 +16,7 @@ export default function SkillsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <Navbar />
+      
       <main className="max-w-7xl mx-auto px-6 py-12">
         <header className="mb-10">
           <h1 className="text-4xl font-black text-slate-900">Delegate Skill Sharing</h1>
