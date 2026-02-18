@@ -73,6 +73,13 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+# CSRF Settings for API
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",
+    "https://munkey-zeta.vercel.app",
+    "https://mun-global.onrender.com",
+]
+
 ROOT_URLCONF = "core.urls"
 
 TEMPLATES = [
