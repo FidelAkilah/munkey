@@ -37,7 +37,7 @@ SIMPLE_JWT = {
     'SLIDING_TOKEN_REFRESH_LIFETIME': timedelta(days=1),
     'AUTH_HEADER_TYPES': ('Bearer',), # Matches NextAuth format
 }
-ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
+ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "mun-global.onrender.com"])
 
 AUTH_USER_MODEL = 'accounts.User'
 # Application definition
