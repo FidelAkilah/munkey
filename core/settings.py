@@ -75,9 +75,9 @@ MIDDLEWARE = [
 
 # CSRF Settings for API
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
     "https://munkey-zeta.vercel.app",
     "https://mun-global.onrender.com",
+    "http://localhost:3000",
 ]
 
 ROOT_URLCONF = "core.urls"
@@ -104,8 +104,8 @@ WSGI_APPLICATION = "core.wsgi.application"
 CORS_ALLOWED_ORIGINS = env.list(
     "CORS_ALLOWED_ORIGINS",
     default=[
-        "http://localhost:3000",
         "https://munkey-zeta.vercel.app",
+        "http://localhost:3000",
     ]
 )
 CORS_ALLOW_CREDENTIALS = True
