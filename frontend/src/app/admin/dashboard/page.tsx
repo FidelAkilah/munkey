@@ -62,7 +62,7 @@ export default function AdminDashboardPage() {
   const fetchPendingArticles = async () => {
     try {
       const token = getCookie("session_token");
-      const res = await fetch("http://localhost:8000/api/news/admin/pending/", {
+      const res = await fetch("https://mun-global.onrender.com/api/news/admin/pending/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -83,7 +83,7 @@ export default function AdminDashboardPage() {
     setProcessingId(id);
     try {
       const token = getCookie("session_token");
-      const res = await fetch(`http://localhost:8000/api/news/admin/${id}/approve/`, {
+      const res = await fetch(`https://mun-global.onrender.com/api/news/admin/${id}/approve/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -108,7 +108,7 @@ export default function AdminDashboardPage() {
     setProcessingId(id);
     try {
       const token = getCookie("session_token");
-      const res = await fetch(`http://localhost:8000/api/news/admin/${id}/reject/`, {
+      const res = await fetch(`https://mun-global.onrender.com/api/news/admin/${id}/reject/`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

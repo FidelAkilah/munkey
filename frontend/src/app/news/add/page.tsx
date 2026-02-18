@@ -75,7 +75,7 @@ function AddNewsForm() {
     }
 
     try {
-      const res = await fetch("http://localhost:8000/api/news/create/", {
+      const res = await fetch("https://mun-global.onrender.com/api/news/create/", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,

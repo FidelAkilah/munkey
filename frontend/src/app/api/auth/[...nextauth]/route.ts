@@ -15,7 +15,7 @@ const handlers = NextAuth({
         }
 
         try {
-          const res = await fetch("http://localhost:8000/auth/jwt/create/", {
+          const res = await fetch("https://mun-global.onrender.com/auth/jwt/create/", {
             method: "POST",
             body: JSON.stringify({
               username: credentials.username,
@@ -31,7 +31,7 @@ const handlers = NextAuth({
           const tokens = await res.json();
 
           if (tokens.access) {
-            const userRes = await fetch("http://localhost:8000/auth/users/me/", {
+            const userRes = await fetch("https://mun-global.onrender.com/auth/users/me/", {
               headers: { Authorization: `Bearer ${tokens.access}` },
             });
             

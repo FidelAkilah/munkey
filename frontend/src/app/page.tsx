@@ -17,7 +17,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchNews() {
       try {
-        const res = await fetch("http://localhost:8000/api/news/", {
+        const res = await fetch("https://mun-global.onrender.com/api/news/", {
           cache: "no-store",
         });
         if (res.ok) {

@@ -48,7 +48,7 @@ export default function MyArticlesPage() {
         return;
       }
 
-      const res = await fetch("http://localhost:8000/api/news/my-articles/", {
+      const res = await fetch("https://mun-global.onrender.com/api/news/my-articles/", {
         headers: {
           Authorization: `Bearer ${token}`,
         },

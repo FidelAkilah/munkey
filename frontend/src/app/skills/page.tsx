@@ -9,7 +9,7 @@ export default function SkillsPage() {
   const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/skills/")
+    fetch("https://mun-global.onrender.com/api/skills/")
       .then(res => res.json())
       .then(data => setCategories(data));
   }, []);

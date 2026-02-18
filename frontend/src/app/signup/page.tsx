@@ -15,7 +15,7 @@ export default function SignupPage() {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const res = await fetch("http://localhost:8000/auth/users/", {
+    const res = await fetch("https://mun-global.onrender.com/auth/users/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
