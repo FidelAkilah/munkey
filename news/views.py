@@ -2,6 +2,8 @@ from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from .models import Article
 from .serializers import ArticleSerializer, ArticleAdminSerializer
 
@@ -21,6 +23,7 @@ class ArticleListView(generics.ListAPIView):
             return queryset.filter(is_junior_safe=True)
         return queryset
 
+@method_decorator(csrf_exempt, name='dispatch')
 class ArticleCreateView(generics.CreateAPIView):
     """
     Allow any authenticated user to submit articles
@@ -55,6 +58,7 @@ class PendingArticleListView(generics.ListAPIView):
     def get_queryset(self):
         return Article.objects.filter(status='PENDING').order_by('created_at')
 
+@csrf_exempt
 class ApproveArticleView(APIView):
     """
     Admin endpoint - approve a pending article
@@ -78,6 +82,7 @@ class ApproveArticleView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
+@csrf_exempt
 class RejectArticleView(APIView):
     """
     Admin endpoint - reject a pending article
