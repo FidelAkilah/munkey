@@ -10,7 +10,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'slug', 'content', 'category', 'featured_image', 'author_name', 'status', 'created_at']
+        fields = ['id', 'title', 'slug', 'content', 'category', 'featured_image', 'image_url', 'author_name', 'status', 'created_at']
         read_only_fields = ['author_name', 'status', 'created_at']
 
 class ArticleAdminSerializer(serializers.ModelSerializer):
@@ -22,5 +22,5 @@ class ArticleAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'slug', 'content', 'category', 'featured_image', 'author_name', 'status', 'rejection_reason', 'created_at', 'updated_at']
+        fields = ['id', 'title', 'slug', 'content', 'category', 'featured_image', 'image_url', 'author_name', 'status', 'rejection_reason', 'created_at', 'updated_at']
         read_only_fields = ['author_name', 'status', 'rejection_reason', 'created_at', 'updated_at']

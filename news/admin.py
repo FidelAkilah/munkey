@@ -19,7 +19,7 @@ class ArticleAdmin(admin.ModelAdmin):
             'fields': ('status', 'rejection_reason')
         }),
         ('Media', {
-            'fields': ('featured_image',),
+            'fields': ('featured_image', 'image_url'),
             'classes': ('collapse',)
         }),
         ('Metadata', {

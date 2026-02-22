@@ -17,6 +17,7 @@ class Article(models.Model):
     author = models.ForeignKey(User, on_delete=models.CASCADE)
     category = models.CharField(max_length=2, choices=Category.choices, default=Category.NEWS)
     featured_image = models.ImageField(upload_to='news_images/')
+    image_url = models.URLField(max_length=500, blank=True, default='')
     content = models.TextField()
     is_breaking = models.BooleanField(default=False)
     status = models.CharField(

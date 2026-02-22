@@ -7,6 +7,30 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSession } from "next-auth/react";
 
+const getCategoryLabel = (cat: string) => {
+  switch (cat) {
+    case "NW": return "Global News";
+    case "GD": return "Preparation Guides";
+    case "IN": return "Delegate Interviews";
+    default: return cat;
+  }
+};
+
+const getCategoryColor = (cat: string) => {
+  switch (cat) {
+    case "NW": return "bg-blue-100 text-blue-700";
+    case "GD": return "bg-purple-100 text-purple-700";
+    case "IN": return "bg-amber-100 text-amber-700";
+    default: return "bg-slate-100 text-slate-700";
+  }
+};
+
+const getImageUrl = (post: any) => {
+  if (post.image_url) return post.image_url;
+  if (post.featured_image) return post.featured_image;
+  return null;
+};
+
 export default function Home() {
   const [news, setNews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,18 +195,52 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
-            {news.map((post, index) => (
-              <motion.div
+            {news.slice(0, 5).map((post, index) => (
+              <Link
                 key={post.id}
-                className={`bg-white rounded-[2.5rem] p-8 border ${
+                href={`/news/${post.slug}`}
+                className={`group block ${
                   index === 0 ? "md:col-span-8" : "md:col-span-4"
                 }`}
               >
-                <h3 className="font-black text-2xl">{post.title}</h3>
-                <p className="mt-4 text-slate-600 line-clamp-3">
-                  {post.content}
-                </p>
-              </motion.div>
+                <motion.div
+                  whileHover={{ y: -4 }}
+                  className="bg-white rounded-[2.5rem] overflow-hidden border hover:shadow-xl transition-shadow h-full"
+                >
+                  {getImageUrl(post) ? (
+                    <div className={`relative w-full ${index === 0 ? "h-64" : "h-48"} overflow-hidden`}>
+                      <img
+                        src={getImageUrl(post)}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    </div>
+                  ) : (
+                    <div className={`w-full ${index === 0 ? "h-64" : "h-48"} bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center`}>
+                      <span className="text-5xl opacity-40">📰</span>
+                    </div>
+                  )}
+
+                  <div className="p-8">
+                    <span className={`inline-block px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${getCategoryColor(post.category)}`}>
+                      {getCategoryLabel(post.category)}
+                    </span>
+
+                    <h3 className="font-black text-2xl mt-3 group-hover:text-blue-600 transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="mt-3 text-slate-600 line-clamp-3">
+                      {post.content}
+                    </p>
+
+                    <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
+                      <span className="font-semibold">{post.author_name}</span>
+                      <span>&middot;</span>
+                      <span>{new Date(post.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              </Link>
             ))}
           </div>
         )}

@@ -17,8 +17,22 @@ class ArticleListView(generics.ListAPIView):
     def get_queryset(self):
         # Only show APPROVED articles to the public
         queryset = Article.objects.filter(status='APPROVED')
-        
+
         # Additional filtering: If user is not logged in or is a Junior, only show safe content
+        if not self.request.user.is_authenticated or self.request.user.role == 'JR':
+            return queryset.filter(is_junior_safe=True)
+        return queryset
+
+class ArticleDetailView(generics.RetrieveAPIView):
+    """
+    Public endpoint - retrieve a single APPROVED article by slug
+    """
+    serializer_class = ArticleSerializer
+    permission_classes = [permissions.AllowAny]
+    lookup_field = 'slug'
+
+    def get_queryset(self):
+        queryset = Article.objects.filter(status='APPROVED')
         if not self.request.user.is_authenticated or self.request.user.role == 'JR':
             return queryset.filter(is_junior_safe=True)
         return queryset

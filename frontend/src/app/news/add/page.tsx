@@ -7,6 +7,7 @@ function AddNewsForm() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [category, setCategory] = useState("NW");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -72,6 +73,10 @@ function AddNewsForm() {
 
     if (imageFile) {
       formData.append("featured_image", imageFile);
+    }
+
+    if (imageUrl) {
+      formData.append("image_url", imageUrl);
     }
 
     try {
@@ -189,12 +194,23 @@ function AddNewsForm() {
         />
 
         {/* Image Upload */}
-        <input
-          type="file"
-          accept="image/*"
-          className="w-full p-4 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-          onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-        />
+        <div className="space-y-3">
+          <label className="text-sm font-semibold text-slate-600">Featured Image</label>
+          <input
+            type="file"
+            accept="image/*"
+            className="w-full p-4 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
+          />
+          <div className="text-center text-xs text-slate-400">or</div>
+          <input
+            type="url"
+            className="w-full p-4 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="Paste an image URL (e.g. from Imgur, Cloudinary...)"
+            value={imageUrl}
+            onChange={(e) => setImageUrl(e.target.value)}
+          />
+        </div>
 
         <div className="flex gap-4">
           <button
