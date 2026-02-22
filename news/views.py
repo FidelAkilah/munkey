@@ -58,7 +58,7 @@ class PendingArticleListView(generics.ListAPIView):
     def get_queryset(self):
         return Article.objects.filter(status='PENDING').order_by('created_at')
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class ApproveArticleView(APIView):
     """
     Admin endpoint - approve a pending article
@@ -82,7 +82,7 @@ class ApproveArticleView(APIView):
                 status=status.HTTP_404_NOT_FOUND
             )
 
-@csrf_exempt
+@method_decorator(csrf_exempt, name='dispatch')
 class RejectArticleView(APIView):
     """
     Admin endpoint - reject a pending article
