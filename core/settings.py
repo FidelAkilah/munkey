@@ -39,6 +39,9 @@ SIMPLE_JWT = {
 }
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["localhost", "127.0.0.1", "mun-global.onrender.com"])
 
+# Trust the Host header forwarded by Render's proxy
+USE_X_FORWARDED_HOST = True
+
 AUTH_USER_MODEL = 'accounts.User'
 # Application definition
 
