@@ -26,9 +26,7 @@ const getCategoryColor = (cat: string) => {
 };
 
 const getImageUrl = (post: any) => {
-  if (post.image_url) return post.image_url;
-  if (post.featured_image) return post.featured_image;
-  return null;
+  return post.image_url || null;
 };
 
 export default function Home() {

@@ -1,113 +1,157 @@
 "use client";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+
+function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = (h * maxWidth) / w;
+          w = maxWidth;
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject("Canvas not supported");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 function AddNewsForm() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageMode, setImageMode] = useState<"upload" | "url">("url");
   const [imageUrl, setImageUrl] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [category, setCategory] = useState("NW");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
 
-  // Get callback URL from search params
   const callbackUrl = searchParams.get("callbackUrl") || "/news/my-articles";
 
-  // Get the access token from session
   const getToken = () => {
-    // Try session first
-    if (session?.user && typeof (session.user as { accessToken?: string }).accessToken === 'string') {
+    if (session?.user && typeof (session.user as { accessToken?: string }).accessToken === "string") {
       return (session.user as { accessToken: string }).accessToken;
     }
     return null;
   };
 
-  // Redirect to login if not authenticated (only once session is confirmed)
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push(`/login?callbackUrl=${encodeURIComponent("/news/add")}`);
     }
   }, [status, router]);
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsCompressing(true);
+    try {
+      const compressed = await compressImage(file);
+      setImagePreview(compressed);
+      setImageUrl(compressed);
+    } catch {
+      setErrorMessage("Failed to process image. Try a different file.");
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleUrlChange = (url: string) => {
+    setImageUrl(url);
+    setImagePreview(url || null);
+  };
+
+  const clearImage = () => {
+    setImageUrl("");
+    setImagePreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!session?.user) {
       router.push(`/login?callbackUrl=${encodeURIComponent("/news/add")}`);
       return;
     }
 
     setIsSubmitting(true);
-    setSubmitStatus('idle');
+    setSubmitStatus("idle");
     setErrorMessage("");
 
     const token = getToken();
-    
+
     if (!token) {
-      setSubmitStatus('error');
+      setSubmitStatus("error");
       setErrorMessage("Session expired. Please log in again.");
       setIsSubmitting(false);
       return;
     }
 
-    // Use FormData instead of JSON
-    const formData = new FormData();
-    formData.append("title", title);
-    formData.append("content", content);
-    formData.append(
-      "slug",
-      title
-        .toLowerCase()
-        .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/[\s_-]+/g, "-")
-        .replace(/^-+|-+$/g, "")
-    );
-    formData.append("category", category);
-
-    if (imageFile) {
-      formData.append("featured_image", imageFile);
-    }
-
-    if (imageUrl) {
-      formData.append("image_url", imageUrl);
-    }
+    const slug = title
+      .toLowerCase()
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
 
     try {
       const res = await fetch("https://mun-global.onrender.com/api/news/create/", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
-        body: formData,
+        body: JSON.stringify({
+          title,
+          content,
+          slug,
+          category,
+          image_url: imageUrl,
+        }),
       });
 
       if (res.ok) {
-        setSubmitStatus('success');
+        setSubmitStatus("success");
         setTimeout(() => {
           router.push(callbackUrl);
         }, 1500);
       } else {
         const errorData = await res.json();
-        setSubmitStatus('error');
+        setSubmitStatus("error");
         setErrorMessage(errorData.detail || JSON.stringify(errorData));
       }
-    } catch (error) {
-      setSubmitStatus('error');
+    } catch {
+      setSubmitStatus("error");
       setErrorMessage("Network error. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // Loading state
-  if (status === 'loading') {
+  if (status === "loading") {
     return (
       <main className="max-w-4xl mx-auto p-12">
         <div className="flex items-center justify-center h-64">
@@ -117,15 +161,12 @@ function AddNewsForm() {
     );
   }
 
-  // If not authenticated, show message
-  if (status === 'unauthenticated' || !session?.user) {
+  if (status === "unauthenticated" || !session?.user) {
     return (
       <main className="max-w-4xl mx-auto p-12">
         <div className="text-center py-20">
           <h1 className="text-4xl font-black mb-6">Login Required</h1>
-          <p className="text-slate-600 mb-8">
-            You need to be logged in to submit an article.
-          </p>
+          <p className="text-slate-600 mb-8">You need to be logged in to submit an article.</p>
           <button
             onClick={() => router.push("/login?callbackUrl=/news/add")}
             className="bg-blue-600 text-white px-12 py-4 rounded-full font-bold hover:bg-blue-700 transition"
@@ -144,7 +185,7 @@ function AddNewsForm() {
         Share your MUN experiences with the community. Your article will be reviewed by our team before publication.
       </p>
 
-      {submitStatus === 'success' && (
+      {submitStatus === "success" && (
         <div className="mb-8 p-6 bg-green-50 border border-green-200 rounded-2xl">
           <div className="flex items-center gap-3 text-green-700">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +196,7 @@ function AddNewsForm() {
         </div>
       )}
 
-      {submitStatus === 'error' && (
+      {submitStatus === "error" && (
         <div className="mb-8 p-6 bg-red-50 border border-red-200 rounded-2xl">
           <div className="flex items-center gap-3 text-red-700">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -193,23 +234,89 @@ function AddNewsForm() {
           required
         />
 
-        {/* Image Upload */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-slate-600">Featured Image</label>
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full p-4 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onChange={(e) => setImageFile(e.target.files?.[0] || null)}
-          />
-          <div className="text-center text-xs text-slate-400">or</div>
-          <input
-            type="url"
-            className="w-full p-4 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Paste an image URL (e.g. from Imgur, Cloudinary...)"
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-          />
+        {/* Image Section */}
+        <div className="space-y-4">
+          <label className="text-sm font-semibold text-slate-700">Featured Image</label>
+
+          {/* Mode Toggle */}
+          <div className="flex gap-2 bg-slate-100 p-1 rounded-full w-fit">
+            <button
+              type="button"
+              onClick={() => { setImageMode("url"); clearImage(); }}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                imageMode === "url"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Paste URL
+            </button>
+            <button
+              type="button"
+              onClick={() => { setImageMode("upload"); clearImage(); }}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
+                imageMode === "upload"
+                  ? "bg-white text-blue-600 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700"
+              }`}
+            >
+              Upload from Device
+            </button>
+          </div>
+
+          {/* URL Input */}
+          {imageMode === "url" && (
+            <input
+              type="url"
+              className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="https://example.com/image.jpg"
+              value={imageUrl.startsWith("data:") ? "" : imageUrl}
+              onChange={(e) => handleUrlChange(e.target.value)}
+            />
+          )}
+
+          {/* File Upload */}
+          {imageMode === "upload" && (
+            <div className="relative">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100"
+                onChange={handleFileChange}
+              />
+              {isCompressing && (
+                <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center">
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    Compressing image...
+                  </div>
+                </div>
+              )}
+              <p className="text-xs text-slate-400 mt-2">
+                Image will be compressed automatically (max 800px wide, JPEG).
+              </p>
+            </div>
+          )}
+
+          {/* Preview */}
+          {imagePreview && (
+            <div className="relative rounded-2xl overflow-hidden border bg-slate-50">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full h-48 object-cover"
+                onError={() => setImagePreview(null)}
+              />
+              <button
+                type="button"
+                onClick={clearImage}
+                className="absolute top-3 right-3 w-8 h-8 bg-black/50 hover:bg-black/70 text-white rounded-full flex items-center justify-center transition"
+              >
+                &times;
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="flex gap-4">
@@ -217,7 +324,7 @@ function AddNewsForm() {
             type="submit"
             disabled={isSubmitting}
             className={`flex-1 bg-blue-600 text-white px-12 py-4 rounded-full font-bold transition ${
-              isSubmitting ? 'opacity-50 cursor-not-allowed' : 'hover:bg-blue-700'
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
             }`}
           >
             {isSubmitting ? (
@@ -229,7 +336,7 @@ function AddNewsForm() {
                 Submitting...
               </span>
             ) : (
-              'Submit for Review'
+              "Submit for Review"
             )}
           </button>
         </div>
@@ -245,14 +352,15 @@ function AddNewsForm() {
 export default function AddNewsPage() {
   return (
     <main className="max-w-4xl mx-auto p-12">
-      <Suspense fallback={
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      }>
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        }
+      >
         <AddNewsForm />
       </Suspense>
     </main>
   );
 }
-

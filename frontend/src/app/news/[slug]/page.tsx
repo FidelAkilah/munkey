@@ -34,7 +34,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
   }
 
   const article = await res.json();
-  const imageUrl = article.image_url || article.featured_image || null;
+  const imageUrl = article.image_url || null;
 
   return (
     <article className="min-h-screen bg-white">
