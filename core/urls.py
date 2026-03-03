@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/conferences/', include('directory.urls')),
     path('api/forum/', include('community.urls')),
     path('api/skills/', include('skills.urls')),
+    path('api/curriculum/', include('curriculum.urls')),
 ]
 
 if settings.DEBUG:
