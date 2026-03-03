@@ -56,11 +56,13 @@ function AddNewsForm() {
     return null;
   };
 
+  // Middleware handles redirect to /login for unauthenticated users.
+  // This is a fallback in case middleware doesn't catch it.
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push(`/login?callbackUrl=${encodeURIComponent("/news/add")}`);
+      window.location.href = `/login?callbackUrl=${encodeURIComponent("/news/add")}`;
     }
-  }, [status, router]);
+  }, [status]);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

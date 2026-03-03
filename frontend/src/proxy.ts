@@ -1,21 +1,34 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export async function proxy(request: NextRequest) {
-  // Check for NextAuth session by looking for session cookies
-  // NextAuth stores session in cookies named next-auth.*
-  const nextAuthCookies = request.cookies.getAll().filter(cookie => 
-    cookie.name.startsWith("next-auth.")
-  );
+// Routes that require authentication
+const protectedRoutes = ["/news/add", "/news/my-articles", "/admin/dashboard"];
 
-  // If no NextAuth session cookies, redirect to login
-  if (request.nextUrl.pathname.startsWith("/news/add") && nextAuthCookies.length === 0) {
-    return NextResponse.redirect(new URL("/login?callbackUrl=/news/add", request.url));
+export function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Check if this is a protected route
+  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
+
+  if (!isProtected) {
+    return NextResponse.next();
+  }
+
+  // In production (HTTPS), NextAuth v4 uses __Secure- prefix
+  // In development (HTTP), it uses the plain prefix
+  const sessionToken =
+    request.cookies.get("__Secure-next-auth.session-token")?.value ||
+    request.cookies.get("next-auth.session-token")?.value;
+
+  if (!sessionToken) {
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("callbackUrl", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/news/add"], // Only run proxy on this specific route
+  matcher: ["/news/add", "/news/my-articles", "/admin/:path*"],
 };

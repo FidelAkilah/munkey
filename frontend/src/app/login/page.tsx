@@ -16,13 +16,13 @@ export default function LoginPage() {
   // Check session and redirect if already authenticated
   useEffect(() => {
     const checkSession = async () => {
-      // Wait a bit for session to initialize
       await new Promise(resolve => setTimeout(resolve, 100));
       setIsCheckingSession(false);
       
-      // Redirect if already logged in
       if (status === "authenticated" && session?.user) {
-        router.replace("/news/add");
+        const params = new URLSearchParams(window.location.search);
+        const callbackUrl = params.get("callbackUrl") || "/";
+        router.replace(callbackUrl);
       }
     };
     checkSession();
@@ -44,8 +44,10 @@ export default function LoginPage() {
         setError("Invalid username or password");
         setIsSubmitting(false);
       } else {
-        // Use direct navigation instead of router to avoid issues
-        window.location.href = "/news/add";
+        // Redirect to the original page the user wanted, or home
+        const params = new URLSearchParams(window.location.search);
+        const callbackUrl = params.get("callbackUrl") || "/";
+        window.location.href = callbackUrl;
       }
     } catch (err) {
       setIsSubmitting(false);

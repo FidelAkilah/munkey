@@ -1,7 +1,11 @@
 import NextAuth from "next-auth";
+import type { AuthOptions } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 
-const handlers = NextAuth({
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mun-global.onrender.com";
+
+export const authOptions: AuthOptions = {
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     Credentials({
       name: "MUN Account",
@@ -15,7 +19,7 @@ const handlers = NextAuth({
         }
 
         try {
-          const res = await fetch("https://mun-global.onrender.com/auth/jwt/create/", {
+          const res = await fetch(`${API_BASE}/auth/jwt/create/`, {
             method: "POST",
             body: JSON.stringify({
               username: credentials.username,
@@ -31,7 +35,7 @@ const handlers = NextAuth({
           const tokens = await res.json();
 
           if (tokens.access) {
-            const userRes = await fetch("https://mun-global.onrender.com/auth/users/me/", {
+            const userRes = await fetch(`${API_BASE}/auth/users/me/`, {
               headers: { Authorization: `Bearer ${tokens.access}` },
             });
             
@@ -40,8 +44,6 @@ const handlers = NextAuth({
             }
             
             const user = await userRes.json();
-            
-            // Determine role: Admin if role='AD' or is_superuser=true
             const role = user.is_superuser ? 'AD' : (user.role || 'SR');
             
             return { 
@@ -69,6 +71,19 @@ const handlers = NextAuth({
     strategy: "jwt",
     maxAge: 24 * 60 * 60,
   },
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production"
+        ? "__Secure-next-auth.session-token"
+        : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -94,8 +109,10 @@ const handlers = NextAuth({
       return session;
     },
   },
-  debug: true,
-});
+  debug: process.env.NODE_ENV !== "production",
+};
 
-export { handlers as GET, handlers as POST };
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
 
