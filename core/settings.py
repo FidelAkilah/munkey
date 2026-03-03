@@ -62,7 +62,11 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework.authtoken',
     'skills',
+    'curriculum',
 ]
+
+# OpenAI API Key for DiplomAI
+OPENAI_API_KEY = env('OPENAI_API_KEY', default='')
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",

@@ -68,6 +68,13 @@ export default function Navbar() {
           >
             SKILL SHARING
           </Link>
+          <Link 
+            href="/curriculum" 
+            className="px-5 py-2 text-sm font-medium text-slate-300 hover:text-white hover:bg-white/5 rounded-lg transition-all duration-200 flex items-center gap-1.5"
+          >
+            <span>🦉</span>
+            <span>DIPLOMAI</span>
+          </Link>
         </div>
 
         {/* CTA & Profile Actions */}
