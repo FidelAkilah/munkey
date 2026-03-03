@@ -92,14 +92,14 @@ export default function CurriculumPage() {
           </div>
           
           <div className="md:w-1/2 flex justify-center md:justify-end relative">
-             <div className="relative w-80 h-80 md:w-96 md:h-96 [&>video]:mix-blend-multiply">
+             <div className="relative w-80 h-80 md:w-96 md:h-96">
                 <video
                   src="/munkeyanimation.mp4"
                   autoPlay
                   loop
                   muted
                   playsInline
-                  className="w-full h-full object-contain drop-shadow-2xl relative z-10"
+                  className="w-full h-full object-cover rounded-full drop-shadow-2xl relative z-10"
                 />
              </div>
           </div>
