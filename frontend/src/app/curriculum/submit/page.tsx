@@ -127,7 +127,7 @@ function SubmitContent() {
             &larr; Back to Curriculum
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-4xl">{"\U0001f4e4"}</span>
+            <span className="text-4xl">📤</span>
             <div>
               <h1 className="text-3xl font-black text-white">Submit for Review</h1>
               <p className="text-slate-400 text-sm">
@@ -143,7 +143,7 @@ function SubmitContent() {
         {promptParam && (
           <div className="bg-orange-50 border border-orange-200 rounded-xl p-5 mb-8">
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">{"\U0001f989"}</span>
+              <span className="text-xl">🐵</span>
               <span className="font-bold text-[#C66810]">Exercise Prompt</span>
             </div>
             <p className="text-sm text-slate-700">{promptParam}</p>
@@ -153,7 +153,7 @@ function SubmitContent() {
         {feedback && (
           <div className="bg-white border border-slate-200 rounded-xl p-8 mb-10 shadow-lg">
             <div className="flex items-center gap-3 mb-6">
-              <span className="text-4xl">{"\U0001f989"}</span>
+              <span className="text-4xl">🐵</span>
               <div>
                 <h2 className="text-2xl font-black text-slate-900">Bongo&apos;s Feedback</h2>
                 <p className="text-xs text-slate-500">Powered by DiplomAI</p>
@@ -173,34 +173,34 @@ function SubmitContent() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5">
               <div className="bg-green-50 rounded-xl p-5 border border-green-200">
-                <h3 className="font-bold text-green-700 mb-2">{"\u2705"} Strengths</h3>
+                <h3 className="font-bold text-green-700 mb-2">✅ Strengths</h3>
                 <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.strengths}</p>
               </div>
               <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
-                <h3 className="font-bold text-[#C66810] mb-2">{"\U0001f527"} Areas for Improvement</h3>
+                <h3 className="font-bold text-[#C66810] mb-2">🔧 Areas for Improvement</h3>
                 <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.improvements}</p>
               </div>
             </div>
 
             <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-5">
-              <h3 className="font-bold text-slate-800 mb-2">{"\U0001f4cb"} Detailed Analysis</h3>
+              <h3 className="font-bold text-slate-800 mb-2">📋 Detailed Analysis</h3>
               <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.detailed_feedback}</p>
             </div>
 
             <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
-              <h3 className="font-bold text-[#C66810] mb-2">{"\U0001f680"} Next Steps</h3>
+              <h3 className="font-bold text-[#C66810] mb-2">🚀 Next Steps</h3>
               <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.suggestions}</p>
             </div>
 
             <div className="mt-6 flex gap-3">
               <Link href="/curriculum/practice"
                 className="px-5 py-2 bg-[#C66810] text-white font-bold rounded-lg hover:bg-[#A05200] transition-colors text-sm">
-                {"\U0001f3af"} Try Another Exercise
+                🎯 Try Another Exercise
               </Link>
               <button
                 onClick={() => { setFeedback(null); setTextContent(""); setVideoUrl(""); }}
                 className="px-5 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm">
-                {"\U0001f4dd"} Submit Again
+                📝 Submit Again
               </button>
             </div>
           </div>
@@ -223,9 +223,9 @@ function SubmitContent() {
               <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-2">Submission Type</label>
               <div className="flex gap-3">
                 {[
-                  { value: "TEXT", label: "\U0001f4dd Text / Draft", desc: "Paste your resolution or speech text" },
-                  { value: "VIDEO_URL", label: "\U0001f3a5 Video URL", desc: "Share a link to your speech recording" },
-                  { value: "FILE", label: "\U0001f4ce File Upload", desc: "Upload a document file" },
+                  { value: "TEXT", label: "📝 Text / Draft", desc: "Paste your resolution or speech text" },
+                  { value: "VIDEO_URL", label: "🎥 Video URL", desc: "Share a link to your speech recording" },
+                  { value: "FILE", label: "📎 File Upload", desc: "Upload a document file" },
                 ].map((opt) => (
                   <button key={opt.value} type="button" onClick={() => setSubmissionType(opt.value)}
                     className={`flex-1 p-4 rounded-xl border-2 text-left transition-all ${
@@ -271,7 +271,7 @@ function SubmitContent() {
                   <input type="file" onChange={(e) => setFileUpload(e.target.files?.[0] || null)}
                     accept=".pdf,.doc,.docx,.txt" className="hidden" id="file-input" />
                   <label htmlFor="file-input" className="cursor-pointer">
-                    <div className="text-4xl mb-3">{"\U0001f4ce"}</div>
+                    <div className="text-4xl mb-3">📎</div>
                     <p className="font-bold text-slate-700">
                       {fileUpload ? fileUpload.name : "Click to upload or drag and drop"}
                     </p>
@@ -291,11 +291,11 @@ function SubmitContent() {
               className="w-full py-4 bg-[#C66810] text-white font-bold text-lg rounded-xl shadow-sm hover:bg-[#A05200] disabled:opacity-60 transition-all">
               {submitting ? (
                 <span className="flex items-center justify-center gap-3">
-                  <span className="animate-bounce">{"\U0001f989"}</span>
+                  <span className="animate-bounce">🐵</span>
                   Bongo is reviewing your work...
                 </span>
               ) : (
-                "\U0001f680 Submit for DiplomAI Review"
+                "🚀 Submit for DiplomAI Review"
               )}
             </button>
 
@@ -313,7 +313,7 @@ function SubmitContent() {
 
 export default function SubmitPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-4xl animate-bounce">{"\U0001f989"}</div></div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><div className="text-4xl animate-bounce">🐵</div></div>}>
       <SubmitContent />
     </Suspense>
   );
