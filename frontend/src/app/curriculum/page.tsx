@@ -3,7 +3,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useSession } from "next-auth/react";
 
 const API_BASE = "https://mun-global.onrender.com";
@@ -95,12 +94,13 @@ export default function CurriculumPage() {
           <div className="md:w-1/2 flex justify-center md:justify-end relative">
              <div className="relative w-80 h-80 md:w-96 md:h-96">
                 <div className="absolute inset-0 bg-gradient-to-tr from-orange-100 to-slate-100 rounded-full blur-3xl opacity-60 animate-pulse"></div>
-                <Image 
-                  src="/MunKey Main Logo.png" 
-                  alt="Bongo - Your AI Strategist" 
-                  fill
-                  className="object-contain drop-shadow-2xl relative z-10"
-                  priority
+                <video
+                  src="/munkeyanimation.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  className="w-full h-full object-contain drop-shadow-2xl relative z-10 rounded-2xl"
                 />
              </div>
           </div>
