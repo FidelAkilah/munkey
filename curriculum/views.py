@@ -123,23 +123,28 @@ class SubmissionCreateView(generics.CreateAPIView):
             question_prompt = submission.question.prompt if submission.question else ""
             category_type = submission.category.category_type
 
+            # Get text content — extract from file if text_content is empty
+            text_content = submission.text_content
+            if not text_content and submission.file_upload:
+                text_content = ai_service.extract_text_from_file(submission.file_upload)
+
             if category_type == 'DRAFT':
                 result = ai_service.review_draft_resolution(
-                    submission.text_content, question_prompt
+                    text_content, question_prompt
                 )
             elif category_type == 'SPEECH':
                 result = ai_service.review_speech(
-                    text_content=submission.text_content,
+                    text_content=text_content,
                     video_url=submission.video_url,
                     question_prompt=question_prompt,
                 )
             elif category_type == 'NEGOTIATION':
                 result = ai_service.review_negotiation(
-                    submission.text_content, question_prompt
+                    text_content, question_prompt
                 )
             else:
                 result = ai_service.review_general(
-                    submission.text_content, question_prompt
+                    text_content, question_prompt
                 )
 
             AIFeedback.objects.create(

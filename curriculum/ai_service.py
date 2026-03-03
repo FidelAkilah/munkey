@@ -4,7 +4,14 @@ Powered by OpenAI. Mascot: Bongo the Strategist.
 """
 import json
 import logging
+import io
 from django.conf import settings
+
+try:
+    from pypdf import PdfReader
+except ImportError:
+    PdfReader = None
+    logging.getLogger(__name__).warning("pypdf not installed. PDF extraction unavailable.")
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +41,45 @@ Always:
 - Use a professional yet approachable tone
 - Sign off feedback as "— Bongo 🦉"
 """
+
+
+def extract_text_from_file(file_field) -> str:
+    """Extract text content from an uploaded file (PDF, TXT, etc.)."""
+    if not file_field:
+        return ""
+
+    try:
+        file_field.seek(0)
+        filename = file_field.name.lower()
+
+        if filename.endswith('.pdf'):
+            if PdfReader is None:
+                return "[PDF file uploaded but pypdf is not installed for text extraction]"
+            reader = PdfReader(io.BytesIO(file_field.read()))
+            text_parts = []
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+            return "\n\n".join(text_parts) if text_parts else "[PDF contained no extractable text — it may be a scanned image]"
+
+        elif filename.endswith('.txt') or filename.endswith('.md'):
+            return file_field.read().decode('utf-8', errors='replace')
+
+        elif filename.endswith('.docx'):
+            return "[DOCX file uploaded — please submit as PDF or paste text directly for best results]"
+
+        else:
+            return f"[File uploaded: {filename} — unsupported format for text extraction. Please submit as PDF or paste text.]"
+
+    except Exception as e:
+        logger.error(f"File text extraction error: {e}")
+        return f"[Error extracting text from file: {str(e)}]"
+    finally:
+        try:
+            file_field.seek(0)
+        except Exception:
+            pass
 
 
 def get_client():
