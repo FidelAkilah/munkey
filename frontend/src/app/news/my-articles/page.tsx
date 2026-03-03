@@ -93,7 +93,7 @@ export default function MyArticlesPage() {
     return (
       <main className="max-w-4xl mx-auto p-12">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#C66810]"></div>
         </div>
       </main>
     );
@@ -108,7 +108,7 @@ export default function MyArticlesPage() {
         </div>
         <Link
           href="/news/add"
-          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
+          className="px-6 py-3 bg-[#C66810] text-white font-semibold rounded-xl hover:bg-[#A05200] transition"
         >
           + New Submission
         </Link>
@@ -123,7 +123,7 @@ export default function MyArticlesPage() {
           </p>
           <Link
             href="/news/add"
-            className="inline-block px-8 py-4 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 transition"
+            className="inline-block px-8 py-4 bg-[#C66810] text-white font-semibold rounded-xl hover:bg-[#A05200] transition"
           >
             Submit Your First Article
           </Link>

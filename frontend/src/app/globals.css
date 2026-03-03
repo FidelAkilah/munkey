@@ -1,16 +1,26 @@
 /* src/app/globals.css */
 @import "tailwindcss";
 
-/* Define your MUN Brand Colors here */
+/* Munkey brand palette — #C66810 orange + white */
 @theme {
-  --color-mun-blue: #1a365d;
-  --color-mun-gold: #c5a059;
+  --color-munkey: #C66810;
+  --color-munkey-light: #E8913A;
+  --color-munkey-dark: #A05200;
+  --color-munkey-50: #FFF7ED;
+  --color-munkey-100: #FFEDD5;
+  --color-munkey-200: #FED7AA;
+  --color-munkey-600: #C66810;
+  --color-munkey-700: #A05200;
+  --color-munkey-800: #7C3F00;
   --color-safe-green: #2d6a4f;
 }
 
-/* Base styles for the "Safe Space" - clean and readable */
 @layer base {
   body {
-    @apply bg-slate-50 text-slate-900 antialiased;
+    @apply bg-white text-slate-900 antialiased;
+  }
+
+  ::selection {
+    background: rgba(198, 104, 16, 0.15);
   }
 }

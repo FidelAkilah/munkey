@@ -17,8 +17,8 @@ const categoryIcons: Record<string, string> = {
 };
 
 const categoryColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  SPEECH: { bg: "bg-amber-50", border: "border-amber-200", text: "text-amber-700", glow: "hover:shadow-amber-200/60" },
-  DRAFT: { bg: "bg-blue-50", border: "border-blue-200", text: "text-blue-700", glow: "hover:shadow-blue-200/60" },
+  SPEECH: { bg: "bg-orange-50", border: "border-orange-200", text: "text-[#C66810]", glow: "hover:shadow-orange-200/60" },
+  DRAFT: { bg: "bg-orange-50", border: "border-orange-200", text: "text-[#C66810]", glow: "hover:shadow-orange-200/60" },
   NEGOTIATION: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", glow: "hover:shadow-emerald-200/60" },
   RESEARCH: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", glow: "hover:shadow-purple-200/60" },
   PROCEDURE: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", glow: "hover:shadow-rose-200/60" },
@@ -66,22 +66,22 @@ export default function CurriculumPage() {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero with Bongo */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 pt-32 pb-20">
+      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-32 pb-20">
         {/* Decorative grid */}
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
         
         <div className="relative max-w-6xl mx-auto px-6 text-center">
           {/* Bongo Mascot */}
-          <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 shadow-2xl shadow-amber-500/30 mb-8 text-6xl">
+          <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#C66810] to-[#A05200] shadow-2xl shadow-[#C66810]/30 mb-8 text-6xl">
             🦉
           </div>
           
           <h1 className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tight">
-            Meet <span className="text-transparent bg-gradient-to-r from-amber-400 via-orange-400 to-pink-400 bg-clip-text">Bongo</span>
+            Meet <span className="text-[#C66810]">Bongo</span>
           </h1>
           <p className="text-xl text-slate-300 mb-2 font-medium">
             Your personal strategist powered by{" "}
-            <span className="text-transparent bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text font-bold">
+            <span className="text-[#C66810] font-bold">
               DiplomAI
             </span>
           </p>
@@ -93,7 +93,7 @@ export default function CurriculumPage() {
           <div className="flex flex-wrap gap-4 justify-center">
             <Link
               href="/curriculum/practice"
-              className="px-8 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 transition-all duration-300 hover:-translate-y-0.5"
+              className="px-8 py-3 bg-[#C66810] text-white font-bold rounded-xl shadow-sm hover:bg-[#A05200] transition-all duration-300 hover:-translate-y-0.5"
             >
               🎯 Start Practicing
             </Link>

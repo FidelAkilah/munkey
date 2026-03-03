@@ -30,7 +30,7 @@ export default function SkillsPage() {
               key={cat.id}
               onClick={() => setActiveTab(idx)}
               className={`px-6 py-2 rounded-full font-bold transition-all whitespace-nowrap ${
-                activeTab === idx ? "bg-blue-600 text-white shadow-lg" : "bg-white text-slate-600 hover:bg-slate-100"
+                activeTab === idx ? "bg-[#C66810] text-white shadow-lg" : "bg-white text-slate-600 hover:bg-slate-100"
               }`}
             >
               {cat.name}
@@ -54,7 +54,7 @@ export default function SkillsPage() {
               </div>
               <div className="p-6">
                 <div className="flex justify-between items-start mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-1 rounded">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#C66810] bg-orange-50 px-2 py-1 rounded">
                     {video.difficulty}
                   </span>
                 </div>

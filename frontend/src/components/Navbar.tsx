@@ -49,9 +49,9 @@ export default function Navbar() {
         >
           <span className="text-3xl font-black tracking-tight">
             <span className="text-white">MUN</span>
-            <span className="text-transparent bg-gradient-to-r from-cyan-400 via-blue-400 to-purple-400 bg-clip-text">KEY</span>
+            <span className="text-[#C66810]">KEY</span>
           </span>
-          <div className="w-px h-6 bg-gradient-to-b from-transparent via-cyan-400/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="w-px h-6 bg-[#C66810]/20" />
         </Link>
 
         {/* Navigation Links - Center */}
@@ -83,13 +83,13 @@ export default function Navbar() {
           {isAuthenticated && (
             <Link 
               href="/news/add" 
-              className="group relative px-5 py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-sm font-semibold rounded-lg overflow-hidden shadow-lg shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300"
+              className="group relative px-5 py-2.5 bg-[#C66810] text-white text-sm font-semibold rounded-lg shadow-sm hover:bg-[#A05200] transition-all duration-300"
             >
               <span className="relative z-10 flex items-center gap-2">
                 <span className="text-lg leading-none">+</span>
                 <span className="hidden sm:inline">ADD NEWS</span>
               </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-[#A05200] opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
             </Link>
           )}
 
@@ -101,7 +101,7 @@ export default function Navbar() {
             <div className="relative">
               <button 
                 onClick={() => setShowUserMenu(!showUserMenu)}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 p-[2px] cursor-pointer group hover:scale-105 transition-transform duration-200"
+                className="w-9 h-9 rounded-full bg-[#C66810] p-[2px] cursor-pointer group hover:scale-105 transition-transform duration-200"
               >
                 <div className="w-full h-full rounded-full bg-slate-800 flex items-center justify-center text-white text-sm font-semibold">
                   {getUserInitial()}
@@ -129,7 +129,7 @@ export default function Navbar() {
                   {isAdmin && (
                     <Link 
                       href="/admin/dashboard"
-                      className="block px-4 py-2 text-sm text-cyan-400 hover:bg-white/5 hover:text-cyan-300"
+                      className="block px-4 py-2 text-sm text-[#C66810] hover:bg-white/5 hover:text-orange-300"
                       onClick={() => setShowUserMenu(false)}
                     >
                       Admin Dashboard

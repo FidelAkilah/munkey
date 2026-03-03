@@ -16,9 +16,9 @@ const getCategoryLabel = (cat: string) => {
 
 const getCategoryColor = (cat: string) => {
   switch (cat) {
-    case "NW": return "bg-blue-100 text-blue-700";
+    case "NW": return "bg-orange-100 text-[#C66810]";
     case "GD": return "bg-purple-100 text-purple-700";
-    case "IN": return "bg-amber-100 text-amber-700";
+    case "IN": return "bg-orange-100 text-[#C66810]";
     default: return "bg-slate-100 text-slate-700";
   }
 };
@@ -81,7 +81,7 @@ export default function NewsPage() {
               onClick={() => setActiveCategory(cat.key)}
               className={`px-6 py-2 rounded-full font-bold text-sm transition-all whitespace-nowrap ${
                 activeCategory === cat.key
-                  ? "bg-blue-600 text-white shadow-lg"
+                  ? "bg-[#C66810] text-white shadow-lg"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
               }`}
             >
@@ -134,7 +134,7 @@ export default function NewsPage() {
                       {getCategoryLabel(post.category)}
                     </span>
 
-                    <h3 className="font-bold text-xl mt-3 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-bold text-xl mt-3 group-hover:text-[#C66810] transition-colors">
                       {post.title}
                     </h3>
                     <p className="mt-2 text-slate-600 text-sm line-clamp-3">

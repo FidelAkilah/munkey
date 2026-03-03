@@ -25,7 +25,7 @@ export default async function ArticlePage({ params }: { params: { slug: string }
         </p>
         <Link
           href="/news"
-          className="text-blue-600 font-bold hover:text-blue-800 transition"
+          className="text-[#C66810] font-bold hover:text-[#A05200] transition"
         >
           &larr; Back to All Stories
         </Link>
@@ -52,13 +52,13 @@ export default async function ArticlePage({ params }: { params: { slug: string }
       <div className={`max-w-4xl mx-auto px-6 ${imageUrl ? "py-12" : "pt-32 pb-16"}`}>
         <Link
           href="/news"
-          className="text-sm text-slate-400 hover:text-blue-600 transition mb-8 inline-block"
+          className="text-sm text-slate-400 hover:text-[#C66810] transition mb-8 inline-block"
         >
           &larr; Back to All Stories
         </Link>
 
         <header className="mb-10">
-          <span className="text-mun-gold font-bold uppercase tracking-widest text-sm">
+          <span className="text-[#C66810] font-bold uppercase tracking-widest text-sm">
             {getCategoryLabel(article.category)}
           </span>
           <h1 className="text-5xl font-extrabold mt-3 leading-tight">

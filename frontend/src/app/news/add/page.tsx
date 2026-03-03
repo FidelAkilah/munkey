@@ -155,7 +155,7 @@ function AddNewsForm() {
     return (
       <main className="max-w-4xl mx-auto p-12">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#C66810]"></div>
         </div>
       </main>
     );
@@ -169,7 +169,7 @@ function AddNewsForm() {
           <p className="text-slate-600 mb-8">You need to be logged in to submit an article.</p>
           <button
             onClick={() => router.push("/login?callbackUrl=/news/add")}
-            className="bg-blue-600 text-white px-12 py-4 rounded-full font-bold hover:bg-blue-700 transition"
+            className="bg-[#C66810] text-white px-12 py-4 rounded-full font-bold hover:bg-[#A05200] transition"
           >
             Go to Login
           </button>
@@ -209,7 +209,7 @@ function AddNewsForm() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <input
-          className="w-full p-6 text-2xl font-bold bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-6 text-2xl font-bold bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-[#C66810]/30"
           placeholder="Enter Article Title..."
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -217,7 +217,7 @@ function AddNewsForm() {
         />
 
         <select
-          className="w-full p-6 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-6 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-[#C66810]/30"
           value={category}
           onChange={(e) => setCategory(e.target.value)}
         >
@@ -227,7 +227,7 @@ function AddNewsForm() {
         </select>
 
         <textarea
-          className="w-full p-6 h-64 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-6 h-64 bg-slate-50 border rounded-3xl focus:outline-none focus:ring-2 focus:ring-[#C66810]/30"
           placeholder="Start typing your article... Share your MUN story, conference experience, or helpful tips for other delegates."
           value={content}
           onChange={(e) => setContent(e.target.value)}
@@ -245,7 +245,7 @@ function AddNewsForm() {
               onClick={() => { setImageMode("url"); clearImage(); }}
               className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                 imageMode === "url"
-                  ? "bg-white text-blue-600 shadow-sm"
+                  ? "bg-white text-[#C66810] shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -256,7 +256,7 @@ function AddNewsForm() {
               onClick={() => { setImageMode("upload"); clearImage(); }}
               className={`px-5 py-2 rounded-full text-sm font-semibold transition-all ${
                 imageMode === "upload"
-                  ? "bg-white text-blue-600 shadow-sm"
+                  ? "bg-white text-[#C66810] shadow-sm"
                   : "text-slate-500 hover:text-slate-700"
               }`}
             >
@@ -268,7 +268,7 @@ function AddNewsForm() {
           {imageMode === "url" && (
             <input
               type="url"
-              className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C66810]/30"
               placeholder="https://example.com/image.jpg"
               value={imageUrl.startsWith("data:") ? "" : imageUrl}
               onChange={(e) => handleUrlChange(e.target.value)}
@@ -282,13 +282,13 @@ function AddNewsForm() {
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-600 hover:file:bg-blue-100"
+                className="w-full p-4 bg-slate-50 border rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#C66810]/30 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-[#C66810] hover:file:bg-orange-100"
                 onChange={handleFileChange}
               />
               {isCompressing && (
                 <div className="absolute inset-0 bg-white/80 rounded-2xl flex items-center justify-center">
                   <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-[#C66810]"></div>
                     Compressing image...
                   </div>
                 </div>
@@ -323,8 +323,8 @@ function AddNewsForm() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`flex-1 bg-blue-600 text-white px-12 py-4 rounded-full font-bold transition ${
-              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-700"
+            className={`flex-1 bg-[#C66810] text-white px-12 py-4 rounded-full font-bold transition ${
+              isSubmitting ? "opacity-50 cursor-not-allowed" : "hover:bg-[#A05200]"
             }`}
           >
             {isSubmitting ? (
@@ -355,7 +355,7 @@ export default function AddNewsPage() {
       <Suspense
         fallback={
           <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#C66810]"></div>
           </div>
         }
       >

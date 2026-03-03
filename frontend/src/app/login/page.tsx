@@ -58,7 +58,7 @@ export default function LoginPage() {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#C66810] mx-auto mb-4"></div>
           <p className="text-slate-600">Loading...</p>
         </div>
       </div>
@@ -95,12 +95,12 @@ export default function LoginPage() {
         <button 
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-blue-600 text-white p-4 rounded-xl font-bold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full bg-[#C66810] text-white p-4 rounded-xl font-bold hover:bg-[#A05200] disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? "Signing in..." : "Sign In"}
         </button>
         <p className="text-center mt-6 text-slate-500 text-sm">
-            Don&apos;t have an account? <Link href="/signup" className="text-blue-600 font-bold">Sign up here</Link>
+            Don&apos;t have an account? <Link href="/signup" className="text-[#C66810] font-bold">Sign up here</Link>
         </p>
       </form>
     </div>

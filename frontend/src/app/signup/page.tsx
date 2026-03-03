@@ -67,7 +67,7 @@ export default function SignupPage() {
           onChange={(e) => setFormData({...formData, re_password: e.target.value})} 
         />
 
-        <button className="w-full bg-black text-white p-4 rounded-xl font-bold hover:bg-blue-600 transition">
+        <button className="w-full bg-[#C66810] text-white p-4 rounded-xl font-bold hover:bg-[#A05200] transition">
           Create Account
         </button>
       </form>

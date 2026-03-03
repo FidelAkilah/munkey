@@ -18,9 +18,9 @@ const getCategoryLabel = (cat: string) => {
 
 const getCategoryColor = (cat: string) => {
   switch (cat) {
-    case "NW": return "bg-blue-100 text-blue-700";
+    case "NW": return "bg-orange-100 text-[#C66810]";
     case "GD": return "bg-purple-100 text-purple-700";
-    case "IN": return "bg-amber-100 text-amber-700";
+    case "IN": return "bg-orange-100 text-[#C66810]";
     default: return "bg-slate-100 text-slate-700";
   }
 };
@@ -56,14 +56,14 @@ export default function Home() {
   }, []);
 
   const missionItems = [
-    { icon: "🌍", label: "Nationwide Media", desc: "Connecting Indonesia's circuit.", glow: "group-hover:shadow-[0_0_25px_rgba(34,211,238,0.4)]", border: "border-cyan-100", bg: "bg-cyan-50", text: "text-cyan-600" },
-    { icon: "📡", label: "Reliable Intel", desc: "Primary source for upcoming MUNs.", glow: "group-hover:shadow-[0_0_25px_rgba(37,99,235,0.4)]", border: "border-blue-100", bg: "bg-blue-50", text: "text-blue-600" },
+    { icon: "🌍", label: "Nationwide Media", desc: "Connecting Indonesia's circuit.", glow: "group-hover:shadow-[0_0_25px_rgba(198,104,16,0.3)]", border: "border-orange-100", bg: "bg-orange-50", text: "text-[#C66810]" },
+    { icon: "📡", label: "Reliable Intel", desc: "Primary source for upcoming MUNs.", glow: "group-hover:shadow-[0_0_25px_rgba(198,104,16,0.3)]", border: "border-orange-100", bg: "bg-orange-50", text: "text-[#C66810]" },
     { icon: "🎓", label: "Free Learning", desc: "Cost-free skill sharing for all.", glow: "group-hover:shadow-[0_0_25px_rgba(147,51,234,0.4)]", border: "border-purple-100", bg: "bg-purple-50", text: "text-purple-600" },
     { icon: "🚀", label: "The Powerhouse", desc: "Building tomorrow's diplomats.", glow: "group-hover:shadow-[0_0_25px_rgba(219,39,119,0.4)]", border: "border-pink-100", bg: "bg-pink-50", text: "text-pink-600" },
   ];
 
   return (
-    <div className="min-h-screen bg-white selection:bg-cyan-500/20">
+    <div className="min-h-screen bg-white selection:bg-[#C66810]/20">
 
       {/* 1. HERO SECTION */}
       <section className="relative pt-44 pb-16 overflow-hidden flex items-center min-h-[600px] bg-slate-900">
@@ -86,7 +86,7 @@ export default function Home() {
         >
           <h1 className="text-6xl md:text-8xl font-bold mb-8 tracking-tight leading-tight">
             One Stop for{" "}
-            <span className="font-serif italic font-light text-blue-300">
+            <span className="font-serif italic font-light text-[#C66810]">
               MUN Excellence.
             </span>
           </h1>
@@ -94,7 +94,7 @@ export default function Home() {
           <div className="flex flex-wrap justify-center gap-5">
             <Link
               href="/skills"
-              className="px-12 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-500 transition-all"
+              className="px-12 py-4 bg-[#C66810] text-white font-bold rounded-2xl hover:bg-[#A05200] transition-all"
             >
               Explore Skills
             </Link>
@@ -120,7 +120,7 @@ export default function Home() {
       </section>
 
       {/* 2. SUBMISSION CALLOUT */}
-      <section className="py-16 bg-blue-50">
+      <section className="py-16 bg-orange-50">
         <div className="max-w-4xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold text-slate-900 mb-4">
             Have a story from your circuit?
@@ -134,14 +134,14 @@ export default function Home() {
           {isAuthenticated ? (
             <Link
               href="/news/add"
-              className="inline-block text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
+              className="inline-block text-[#C66810] font-bold border-b-2 border-[#C66810] pb-1 hover:text-[#A05200] hover:border-[#A05200] transition-all"
             >
               Submit Your Article →
             </Link>
           ) : (
             <Link
               href="/login"
-              className="inline-block text-blue-600 font-bold border-b-2 border-blue-600 pb-1 hover:text-blue-800 hover:border-blue-800 transition-all"
+              className="inline-block text-[#C66810] font-bold border-b-2 border-[#C66810] pb-1 hover:text-[#A05200] hover:border-[#A05200] transition-all"
             >
               Login to Submit →
             </Link>
@@ -178,7 +178,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-6 py-24">
         <div className="flex items-end justify-between mb-16">
           <h2 className="text-5xl font-bold italic">Latest from the circuit.</h2>
-          <Link href="/news" className="text-sm font-bold text-blue-600">
+          <Link href="/news" className="text-sm font-bold text-[#C66810]">
             View All Stories →
           </Link>
         </div>
@@ -224,7 +224,7 @@ export default function Home() {
                       {getCategoryLabel(post.category)}
                     </span>
 
-                    <h3 className="font-black text-2xl mt-3 group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-black text-2xl mt-3 group-hover:text-[#C66810] transition-colors">
                       {post.title}
                     </h3>
                     <p className="mt-3 text-slate-600 line-clamp-3">
