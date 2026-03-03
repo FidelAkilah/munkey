@@ -53,7 +53,7 @@ export default function CurriculumPage() {
     if (!isAuthenticated) return;
     async function fetchStats() {
       try {
-        const token = (session as any)?.accessToken;
+        const token = (session as any)?.user?.accessToken;
         const res = await fetch(`${API_BASE}/api/curriculum/stats/`, {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });

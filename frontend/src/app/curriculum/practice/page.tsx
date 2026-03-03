@@ -71,7 +71,7 @@ function PracticeContent() {
     }
     setGenerating(true);
     try {
-      const token = (session as any)?.accessToken;
+      const token = (session as any)?.user?.accessToken;
       const cat = categories.find((c: any) => c.slug === selectedCategory);
       const categoryType = cat?.category_type || "GENERAL";
 

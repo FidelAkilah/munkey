@@ -54,7 +54,7 @@ function SubmitContent() {
     setSubmitting(true);
 
     try {
-      const token = (session as any)?.accessToken;
+      const token = (session as any)?.user?.accessToken;
 
       let body: any;
       const headers: Record<string, string> = {};
