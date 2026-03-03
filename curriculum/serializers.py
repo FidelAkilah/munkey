@@ -81,7 +81,8 @@ class SubmissionCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Submission
-        fields = ['question', 'category', 'submission_type', 'text_content', 'file_upload', 'video_url']
+        fields = ['id', 'question', 'category', 'submission_type', 'text_content', 'file_upload', 'video_url']
+        read_only_fields = ['id']
 
     def validate(self, data):
         sub_type = data.get('submission_type', 'TEXT')

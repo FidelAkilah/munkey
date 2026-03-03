@@ -103,9 +103,19 @@ class SubmissionCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        submission = serializer.save(user=self.request.user)
-        # Trigger AI review asynchronously (synchronous for now)
-        self._run_ai_review(submission)
+        self._submission = serializer.save(user=self.request.user)
+        # Trigger AI review synchronously so feedback is in the response
+        self._run_ai_review(self._submission)
+
+    def create(self, request, *args, **kwargs):
+        """Override create to return full submission data with feedback."""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        # Refresh from DB to pick up the newly-created feedback relation
+        self._submission.refresh_from_db()
+        output = SubmissionSerializer(self._submission).data
+        return Response(output, status=status.HTTP_201_CREATED)
 
     def _run_ai_review(self, submission):
         """Run DiplomAI review on the submission."""
