@@ -36,26 +36,11 @@ export default function CurriculumPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        // const catRes = await fetch(`${API_BASE}/api/curriculum/categories/`);
-        // Mock data for now if fetch fails or just use the structure
-        // If the API is real, uncomment. For now, let's assume we fetch or fallback.
-        const mockCategories = [
-           { id: "speech", name: "Speech & Oratory", type: "SPEECH", description: "Master the art of public speaking and persuasion." },
-           { id: "draft", name: "Drafting Resolutions", type: "DRAFT", description: "Learn to write clear, actionable operative clauses." },
-           { id: "negot", name: "Negotiation", type: "NEGOTIATION", description: "Build consensus and lead unmoderated caucuses." },
-           { id: "res", name: "Research", type: "RESEARCH", description: "Deep dive into country policy and topic background." },
-        ];
-        // simple simulation
-        setCategories(mockCategories); 
-        
-        // Try real fetch
-        fetch(`${API_BASE}/api/curriculum/categories/`)
-          .then(res => res.ok ? res.json() : null)
-          .then(data => {
-            if (data && data.length > 0) setCategories(data);
-          })
-          .catch(() => {});
-          
+        const res = await fetch(`${API_BASE}/api/curriculum/categories/`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.length > 0) setCategories(data);
+        }
       } catch (err) {
         console.error("Failed to fetch curriculum:", err);
       } finally {
@@ -137,18 +122,27 @@ export default function CurriculumPage() {
               <div key={i} className="h-64 bg-white rounded-2xl border border-slate-200 shadow-sm animate-pulse"></div>
             ))}
           </div>
+        ) : categories.length === 0 ? (
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200">
+            <div className="text-5xl mb-4">🐵</div>
+            <h3 className="text-xl font-bold text-slate-700 mb-2">Modules loading soon</h3>
+            <p className="text-slate-500 mb-6">The backend is warming up. Try refreshing in a moment!</p>
+            <Link href="/curriculum/practice" className="inline-block px-6 py-3 bg-[#C66810] text-white font-bold rounded-xl hover:bg-[#A05200] transition-colors">
+              Go to Practice Arena
+            </Link>
+          </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {categories.map((cat, idx) => {
-              const style = categoryColors[cat.type] || categoryColors.GENERAL;
+              const style = categoryColors[cat.type || cat.category_type] || categoryColors.GENERAL;
               return (
                 <Link 
-                  href={`/curriculum/${cat.id}`} 
+                  href={`/curriculum/practice?category=${cat.slug || cat.id}`} 
                   key={idx}
-                  className={`group relative bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-transparent transition-all duration-300 flex flex-col items-start gap-4 overflow-hidden ${style.border}`}
+                  className={`group relative bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-transparent transition-all duration-300 flex flex-col items-start gap-4 overflow-hidden hover:-translate-y-1 ${style.border}`}
                 >
                   <div className={`w-14 h-14 rounded-xl ${style.iconBg} flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform duration-300`}>
-                    {categoryIcons[cat.type] || "📚"}
+                    {categoryIcons[cat.type || cat.category_type] || "📚"}
                   </div>
                   
                   <div>

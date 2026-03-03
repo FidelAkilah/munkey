@@ -120,17 +120,18 @@ function SubmitContent() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <section className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-28 pb-12">
-        <div className="max-w-4xl mx-auto px-6">
-          <Link href="/curriculum" className="text-slate-400 hover:text-white text-sm font-medium mb-3 inline-block">
+    <div className="min-h-screen bg-slate-50">
+      <section className="relative overflow-hidden bg-white border-b border-slate-200">
+        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-30"></div>
+        <div className="max-w-4xl mx-auto px-6 pt-28 pb-12 relative z-10">
+          <Link href="/curriculum" className="text-slate-500 hover:text-[#C66810] text-sm font-medium mb-4 inline-flex items-center gap-1 transition-colors">
             &larr; Back to Curriculum
           </Link>
           <div className="flex items-center gap-3">
-            <span className="text-4xl">📤</span>
+            <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl">📤</div>
             <div>
-              <h1 className="text-3xl font-black text-white">Submit for Review</h1>
-              <p className="text-slate-400 text-sm">
+              <h1 className="text-3xl font-black text-slate-900">Submit for Review</h1>
+              <p className="text-slate-500 text-sm">
                 Upload your work and let <span className="text-[#C66810] font-semibold">Bongo</span> powered by{" "}
                 <span className="text-[#C66810] font-semibold">DiplomAI</span> give you expert feedback
               </p>
