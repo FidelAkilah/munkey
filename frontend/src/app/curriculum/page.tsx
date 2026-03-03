@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSession } from "next-auth/react";
 
 const API_BASE = "https://mun-global.onrender.com";
@@ -16,30 +17,45 @@ const categoryIcons: Record<string, string> = {
   GENERAL: "📚",
 };
 
-const categoryColors: Record<string, { bg: string; border: string; text: string; glow: string }> = {
-  SPEECH: { bg: "bg-orange-50", border: "border-orange-200", text: "text-[#C66810]", glow: "hover:shadow-orange-200/60" },
-  DRAFT: { bg: "bg-orange-50", border: "border-orange-200", text: "text-[#C66810]", glow: "hover:shadow-orange-200/60" },
-  NEGOTIATION: { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", glow: "hover:shadow-emerald-200/60" },
-  RESEARCH: { bg: "bg-purple-50", border: "border-purple-200", text: "text-purple-700", glow: "hover:shadow-purple-200/60" },
-  PROCEDURE: { bg: "bg-rose-50", border: "border-rose-200", text: "text-rose-700", glow: "hover:shadow-rose-200/60" },
-  GENERAL: { bg: "bg-slate-50", border: "border-slate-200", text: "text-slate-700", glow: "hover:shadow-slate-200/60" },
+const categoryColors: Record<string, { bg: string; border: string; text: string; iconBg: string }> = {
+  SPEECH: { bg: "bg-white", border: "hover:border-orange-300", text: "text-slate-700", iconBg: "bg-orange-100 text-orange-600" },
+  DRAFT: { bg: "bg-white", border: "hover:border-blue-300", text: "text-slate-700", iconBg: "bg-blue-100 text-blue-600" },
+  NEGOTIATION: { bg: "bg-white", border: "hover:border-emerald-300", text: "text-slate-700", iconBg: "bg-emerald-100 text-emerald-600" },
+  RESEARCH: { bg: "bg-white", border: "hover:border-purple-300", text: "text-slate-700", iconBg: "bg-purple-100 text-purple-600" },
+  PROCEDURE: { bg: "bg-white", border: "hover:border-rose-300", text: "text-slate-700", iconBg: "bg-rose-100 text-rose-600" },
+  GENERAL: { bg: "bg-white", border: "hover:border-slate-300", text: "text-slate-700", iconBg: "bg-slate-100 text-slate-600" },
 };
 
 export default function CurriculumPage() {
   const [categories, setCategories] = useState<any[]>([]);
-  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isAuthenticated = !!session?.user;
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const catRes = await fetch(`${API_BASE}/api/curriculum/categories/`);
-        if (catRes.ok) {
-          const catData = await catRes.json();
-          setCategories(catData);
-        }
+        // const catRes = await fetch(`${API_BASE}/api/curriculum/categories/`);
+        // Mock data for now if fetch fails or just use the structure
+        // If the API is real, uncomment. For now, let's assume we fetch or fallback.
+        const mockCategories = [
+           { id: "speech", name: "Speech & Oratory", type: "SPEECH", description: "Master the art of public speaking and persuasion." },
+           { id: "draft", name: "Drafting Resolutions", type: "DRAFT", description: "Learn to write clear, actionable operative clauses." },
+           { id: "negot", name: "Negotiation", type: "NEGOTIATION", description: "Build consensus and lead unmoderated caucuses." },
+           { id: "res", name: "Research", type: "RESEARCH", description: "Deep dive into country policy and topic background." },
+        ];
+        // simple simulation
+        setCategories(mockCategories); 
+        
+        // Try real fetch
+        fetch(`${API_BASE}/api/curriculum/categories/`)
+          .then(res => res.ok ? res.json() : null)
+          .then(data => {
+            if (data && data.length > 0) setCategories(data);
+          })
+          .catch(() => {});
+          
       } catch (err) {
         console.error("Failed to fetch curriculum:", err);
       } finally {
@@ -49,131 +65,103 @@ export default function CurriculumPage() {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    async function fetchStats() {
-      try {
-        const token = (session as any)?.user?.accessToken;
-        const res = await fetch(`${API_BASE}/api/curriculum/stats/`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        });
-        if (res.ok) setStats(await res.json());
-      } catch { /* silent */ }
-    }
-    fetchStats();
-  }, [isAuthenticated, session]);
-
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero with Bongo */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 pt-32 pb-20">
-        {/* Decorative grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:40px_40px]" />
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-white border-b border-slate-200">
+        <div className="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-30"></div>
         
-        <div className="relative max-w-6xl mx-auto px-6 text-center">
-          {/* Bongo Mascot */}
-          <div className="inline-flex items-center justify-center w-28 h-28 rounded-full bg-gradient-to-br from-[#C66810] to-[#A05200] shadow-2xl shadow-[#C66810]/30 mb-8 text-6xl">
-            🦉
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-24 flex flex-col md:flex-row items-center gap-12 relative z-10">
+          <div className="md:w-1/2 text-left space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-orange-50 text-[#C66810] text-sm font-bold border border-orange-100">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-[#C66810]"></span>
+              </span>
+              DiplomAI Beta
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.1]">
+              Meet <span className="text-[#C66810]">Bongo</span>,<br />
+              Your MUN Strategist
+            </h1>
+            
+            <p className="text-lg text-slate-600 leading-relaxed max-w-lg">
+              Unlock your potential with AI-driven feedback on speeches, resolutions, and strategy. 
+              Review your performance in real-time and climb the ranks of diplomacy.
+            </p>
+
+            <div className="flex flex-wrap gap-4 pt-4">
+              <Link
+                href="/curriculum/practice"
+                className="px-8 py-4 bg-[#C66810] text-white font-bold rounded-xl shadow-lg shadow-orange-200 hover:bg-[#A05200] hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform"
+              >
+                Start Training
+              </Link>
+              <Link
+                href="#modules"
+                className="px-8 py-4 bg-white text-slate-700 font-bold rounded-xl border-2 border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-all duration-300"
+              >
+                View Modules
+              </Link>
+            </div>
           </div>
           
-          <h1 className="text-5xl md:text-6xl font-black text-white mb-4 tracking-tight">
-            Meet <span className="text-[#C66810]">Bongo</span>
-          </h1>
-          <p className="text-xl text-slate-300 mb-2 font-medium">
-            Your personal strategist powered by{" "}
-            <span className="text-[#C66810] font-bold">
-              DiplomAI
-            </span>
-          </p>
-          <p className="text-slate-400 max-w-2xl mx-auto mb-10">
-            Master every skill in Model United Nations — from commanding speeches to airtight draft resolutions.
-            Bongo the Strategist guides your journey with AI-powered personalized feedback.
-          </p>
-
-          <div className="flex flex-wrap gap-4 justify-center">
-            <Link
-              href="/curriculum/practice"
-              className="px-8 py-3 bg-[#C66810] text-white font-bold rounded-xl shadow-sm hover:bg-[#A05200] transition-all duration-300 hover:-translate-y-0.5"
-            >
-              🎯 Start Practicing
-            </Link>
-            <Link
-              href="/curriculum/submit"
-              className="px-8 py-3 bg-white/10 backdrop-blur text-white font-bold rounded-xl border border-white/20 hover:bg-white/20 transition-all duration-300 hover:-translate-y-0.5"
-            >
-              📤 Submit for Review
-            </Link>
+          <div className="md:w-1/2 flex justify-center md:justify-end relative">
+             <div className="relative w-80 h-80 md:w-96 md:h-96">
+                <div className="absolute inset-0 bg-gradient-to-tr from-orange-100 to-slate-100 rounded-full blur-3xl opacity-60 animate-pulse"></div>
+                <Image 
+                  src="/MunKey Main Logo.png" 
+                  alt="Bongo - Your AI Strategist" 
+                  fill
+                  className="object-contain drop-shadow-2xl relative z-10"
+                  priority
+                />
+             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats Bar (if authenticated) */}
-      {stats && (
-        <section className="bg-slate-50 border-b border-slate-200">
-          <div className="max-w-6xl mx-auto px-6 py-6">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              {[
-                { label: "Lessons Completed", value: `${stats.completed_lessons}/${stats.total_lessons}`, sub: `${stats.completion_percentage}%` },
-                { label: "Submissions", value: stats.total_submissions, sub: `${stats.reviewed_submissions} reviewed` },
-                { label: "Average Score", value: `${stats.average_score}/100`, sub: "DiplomAI rating" },
-                { label: "Progress", value: `${stats.completion_percentage}%`, sub: "overall" },
-              ].map((stat, i) => (
-                <div key={i} className="text-center">
-                  <p className="text-2xl font-black text-slate-900">{stat.value}</p>
-                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{stat.label}</p>
-                  <p className="text-xs text-slate-400">{stat.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Categories Grid */}
-      <section className="max-w-6xl mx-auto px-6 py-16">
-        <div className="mb-12">
-          <h2 className="text-3xl font-black text-slate-900">Your Curriculum</h2>
-          <p className="text-slate-500 mt-2">Choose a track and start leveling up your MUN game.</p>
+      {/* Categories / Modules Grid */}
+      <section id="modules" className="max-w-7xl mx-auto px-6 lg:px-8 py-20">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl font-black text-slate-900 mb-4">Training Modules</h2>
+          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+            Select a skill to focus on. Each module is designed to target specific areas of your Model UN performance.
+          </p>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <div key={i} className="h-52 bg-slate-100 rounded-2xl animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-64 bg-white rounded-2xl border border-slate-200 shadow-sm animate-pulse"></div>
             ))}
           </div>
-        ) : categories.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">🦉</div>
-            <h3 className="text-xl font-bold text-slate-700">Curriculum Coming Soon!</h3>
-            <p className="text-slate-500 mt-2">Bongo is preparing lessons. Check back soon!</p>
-          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {categories.map((cat) => {
-              const colors = categoryColors[cat.category_type] || categoryColors.GENERAL;
-              const icon = categoryIcons[cat.category_type] || "📚";
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {categories.map((cat, idx) => {
+              const style = categoryColors[cat.type] || categoryColors.GENERAL;
               return (
-                <Link
-                  key={cat.id}
-                  href={`/curriculum/practice?category=${cat.slug}`}
-                  className={`group relative p-6 rounded-2xl border ${colors.border} ${colors.bg} ${colors.glow} shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}
+                <Link 
+                  href={`/curriculum/${cat.id}`} 
+                  key={idx}
+                  className={`group relative bg-white rounded-2xl p-8 border border-slate-200 shadow-sm hover:shadow-xl hover:border-transparent transition-all duration-300 flex flex-col items-start gap-4 overflow-hidden ${style.border}`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <span className="text-4xl">{icon}</span>
-                    <div className="flex gap-2">
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-white px-2 py-1 rounded-full">
-                        {cat.lesson_count} lessons
-                      </span>
-                      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-500 bg-white px-2 py-1 rounded-full">
-                        {cat.question_count} exercises
-                      </span>
-                    </div>
+                  <div className={`w-14 h-14 rounded-xl ${style.iconBg} flex items-center justify-center text-2xl mb-2 group-hover:scale-110 transition-transform duration-300`}>
+                    {categoryIcons[cat.type] || "📚"}
                   </div>
-                  <h3 className={`text-xl font-bold ${colors.text} mb-2`}>{cat.name}</h3>
-                  <p className="text-sm text-slate-500 line-clamp-2">{cat.description || "Master this essential MUN skill with Bongo."}</p>
-                  <div className="mt-4 flex items-center gap-2 text-sm font-semibold text-slate-400 group-hover:text-slate-600 transition-colors">
-                    <span>Explore →</span>
+                  
+                  <div>
+                    <h3 className="text-xl font-bold text-slate-900 mb-2 group-hover:text-[#C66810] transition-colors">
+                      {cat.name}
+                    </h3>
+                    <p className="text-slate-500 text-sm leading-relaxed">
+                      {cat.description || "Enhance your skills with AI feedback."}
+                    </p>
+                  </div>
+                  
+                  <div className="mt-auto pt-4 flex items-center text-sm font-bold text-slate-400 group-hover:text-[#C66810] transition-colors">
+                    Start Module <span className="ml-2 group-hover:translate-x-1 transition-transform">→</span>
                   </div>
                 </Link>
               );
@@ -182,45 +170,28 @@ export default function CurriculumPage() {
         )}
       </section>
 
-      {/* How It Works */}
-      <section className="bg-slate-50 border-t border-slate-200">
-        <div className="max-w-6xl mx-auto px-6 py-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-slate-900">How DiplomAI Works</h2>
-            <p className="text-slate-500 mt-2">Powered by AI. Guided by Bongo. Built for delegates.</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              {
-                step: "01",
-                icon: "📝",
-                title: "Pick a Challenge",
-                desc: "Choose from speech prompts, draft resolution exercises, or negotiation scenarios.",
-              },
-              {
-                step: "02",
-                icon: "📤",
-                title: "Submit Your Work",
-                desc: "Upload your draft resolution text, paste your speech, or share a video recording.",
-              },
-              {
-                step: "03",
-                icon: "🦉",
-                title: "Get AI Feedback",
-                desc: "DiplomAI reviews your work and gives detailed scores, strengths, and actionable tips.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="relative bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
-                <span className="absolute -top-3 -left-3 w-8 h-8 bg-slate-900 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {item.step}
-                </span>
-                <div className="text-4xl mb-4">{item.icon}</div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-slate-500">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* CTA Section */}
+      <section className="bg-[#0a1628] py-20 relative overflow-hidden">
+         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl"></div>
+         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
+         
+         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+           <h2 className="text-3xl md:text-4xl font-black text-white mb-6">
+             Ready to become a <span className="text-[#C66810]">Best Delegate</span>?
+           </h2>
+           <p className="text-slate-300 text-lg mb-10 max-w-2xl mx-auto">
+             Join thousands of students enhancing their diplomacy skills with DiplomAI. 
+             Sign up today to track your progress.
+           </p>
+           {!isAuthenticated && (
+             <Link 
+               href="/signup" 
+               className="inline-block px-10 py-4 bg-white text-slate-900 font-bold rounded-xl shadow-lg hover:bg-slate-100 transition-all duration-200"
+             >
+               Get Started for Free
+             </Link>
+           )}
+         </div>
       </section>
     </div>
   );
