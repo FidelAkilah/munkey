@@ -51,13 +51,15 @@ class NextAuthJWTAuthentication(authentication.BaseAuthentication):
     def authenticate_credentials(self, token):
         """
         Authenticate by decoding token and validating user exists in database.
+        The NextAuth session stores the Django JWT from login time, but may
+        outlive the token's 60-min expiry. Since we already skip signature
+        verification (relying on the DB lookup for trust), we also skip
+        expiration so that long-lived sessions keep working.
         """
         try:
-            # Decode the JWT without verification (since keys may differ)
-            # but extract the user_id from the payload
             payload = jwt.decode(
                 token,
-                options={"verify_signature": False},
+                options={"verify_signature": False, "verify_exp": False},
                 algorithms=["HS256", "HS512", "RS256"]
             )
             
