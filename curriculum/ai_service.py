@@ -228,22 +228,36 @@ def generate_practice_questions(category_type: str, difficulty: str = "INT", cou
         "GENERAL": "Mix of general MUN skills including conference preparation, committee strategy, and delegate etiquette.",
     }.get(category_type, "General MUN practice exercises.")
 
+    # Map category to the question_type the AI must use
+    forced_question_type = {
+        "SPEECH": "SPEECH",
+        "DRAFT": "DRAFT",
+        "NEGOTIATION": "NEGOTIATION",
+        "RESEARCH": "OPEN",
+        "PROCEDURE": "QUIZ",
+        "GENERAL": "OPEN",
+    }.get(category_type, "OPEN")
+
     user_prompt = f"""Generate {count} MUN practice exercises.
 
 Category: {category_type}
 Difficulty: {difficulty_desc}
 Category Guidance: {category_guidance}
 
+IMPORTANT: ALL exercises MUST be strictly about {category_type} only. Do NOT generate exercises for other categories.
+Every exercise must have "question_type" set to "{forced_question_type}".
+
 Return as a JSON array where each item has:
 - "title": short, engaging exercise title (5-10 words)
 - "prompt": detailed exercise prompt/scenario (2-3 paragraphs with specific context, country names, committee names, and realistic details)
 - "hints": 2-3 helpful hints for the student, separated by semicolons
-- "question_type": one of SPEECH, DRAFT, NEGOTIATION, QUIZ, OPEN
+- "question_type": MUST be "{forced_question_type}" for all exercises
 - "key_concepts": comma-separated list of 3-5 key MUN concepts this exercise tests
 - "sample_approach": a brief 2-sentence description of how a strong delegate would approach this
 
 Make them realistic, educational, and based on actual UN committees and real-world issues.
-Ensure progressively challenging content within the difficulty tier."""
+Ensure progressively challenging content within the difficulty tier.
+Remember: stay within the {category_type} category ONLY."""
 
     try:
         response = client.chat.completions.create(
