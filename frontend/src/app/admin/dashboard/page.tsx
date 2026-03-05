@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 interface ExtendedUser {
   name?: string | null;
@@ -98,76 +99,113 @@ export default function AdminDashboardPage() {
 
   if (loading) {
     return (
-      <main className="max-w-5xl mx-auto px-6 pt-28">
-        <div className="flex items-center justify-center h-64">
+      <div className="min-h-screen bg-slate-50">
+        <div className="flex items-center justify-center h-64 pt-32">
           <div className="animate-spin rounded-full h-10 w-10 border-2 border-[#C66810] border-t-transparent"></div>
         </div>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="max-w-5xl mx-auto px-6 pt-28 pb-16">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-slate-900 mb-1">Editorial Dashboard</h1>
-          <p className="text-slate-500 text-sm">Review and approve article submissions</p>
-        </div>
-        <Link href="/" className="px-5 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition text-sm">
-          &larr; Back to Home
-        </Link>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Pending Review</p>
-          <p className="text-3xl font-black text-[#C66810]">{pendingArticles.length}</p>
-        </div>
-      </div>
-
-      {pendingArticles.length === 0 ? (
-        <div className="text-center py-16 bg-slate-50 rounded-xl border border-slate-200">
-          <div className="text-5xl mb-3">{"\u2705"}</div>
-          <h2 className="text-xl font-bold text-slate-700 mb-2">All Caught Up!</h2>
-          <p className="text-slate-500 text-sm">No articles pending review at the moment.</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {pendingArticles.map((article) => (
-            <div key={article.id} className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-orange-200 transition-all">
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
-                      {getCategoryLabel(article.category)}
-                    </span>
-                    <span className="px-2 py-0.5 bg-orange-100 text-[#C66810] rounded text-[9px] font-bold uppercase tracking-widest">
-                      PENDING
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-900 mb-1.5">{article.title}</h3>
-                  <p className="text-sm text-slate-600 mb-3 line-clamp-3">{article.content}</p>
-                  <div className="flex items-center gap-3 text-xs text-slate-400">
-                    <span>By {article.author_name}</span>
-                    <span>&middot;</span>
-                    <span>{new Date(article.created_at).toLocaleDateString()}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <button onClick={() => handleApprove(article.id)} disabled={processingId === article.id}
-                    className="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-50 text-sm">
-                    {processingId === article.id ? "..." : "Approve"}
-                  </button>
-                  <button onClick={() => handleReject(article.id)} disabled={processingId === article.id}
-                    className="px-5 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition disabled:opacity-50 text-sm">
-                    Reject
-                  </button>
-                </div>
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero Header */}
+      <section className="relative overflow-hidden bg-[#0a1628] grain">
+        <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[500px] h-[500px] bg-[#C66810]/10 rounded-full blur-[100px]" />
+        <div className="max-w-5xl mx-auto px-6 pt-28 pb-12 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-black uppercase tracking-[0.3em] text-[#C66810] mb-2">Admin</p>
+                <h1 className="text-3xl md:text-4xl font-black text-white mb-1">Editorial <span className="font-playfair italic text-[#C66810]">Dashboard</span></h1>
+                <p className="text-slate-400 text-sm">Review and approve article submissions</p>
               </div>
+              <Link href="/" className="px-5 py-2 bg-white/[0.07] text-white font-bold rounded-lg hover:bg-white/[0.12] border border-white/10 transition text-sm">
+                &larr; Back to Home
+              </Link>
             </div>
-          ))}
+          </motion.div>
         </div>
-      )}
-    </main>
+      </section>
+
+      <main className="max-w-5xl mx-auto px-6 py-10">
+        {/* Stats */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8"
+        >
+          <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Pending Review</p>
+            <p className="text-3xl font-black text-[#C66810]">{pendingArticles.length}</p>
+          </div>
+        </motion.div>
+
+        {pendingArticles.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center py-16 bg-white rounded-2xl border border-slate-200"
+          >
+            <div className="text-5xl mb-3">{"\u2705"}</div>
+            <h2 className="text-xl font-bold text-slate-700 mb-2">All Caught Up!</h2>
+            <p className="text-slate-500 text-sm">No articles pending review at the moment.</p>
+          </motion.div>
+        ) : (
+          <div className="space-y-4">
+            {pendingArticles.map((article, idx) => (
+              <motion.div
+                key={article.id}
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: idx * 0.06 }}
+                className="bg-white border border-slate-200 rounded-xl p-5 hover:shadow-md hover:border-orange-200 transition-all"
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[9px] font-bold text-slate-500 uppercase tracking-widest">
+                        {getCategoryLabel(article.category)}
+                      </span>
+                      <span className="px-2 py-0.5 bg-orange-100 text-[#C66810] rounded-md text-[9px] font-bold uppercase tracking-widest">
+                        Pending
+                      </span>
+                    </div>
+                    <h3 className="text-lg font-bold text-slate-900 mb-1.5">{article.title}</h3>
+                    <p className="text-sm text-slate-600 mb-3 line-clamp-3">{article.content}</p>
+                    <div className="flex items-center gap-3 text-xs text-slate-400">
+                      <span>By {article.author_name}</span>
+                      <span>&middot;</span>
+                      <span>{new Date(article.created_at).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleApprove(article.id)}
+                      disabled={processingId === article.id}
+                      className="px-5 py-2 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition disabled:opacity-50 text-sm"
+                    >
+                      {processingId === article.id ? "..." : "Approve"}
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.03 }}
+                      whileTap={{ scale: 0.97 }}
+                      onClick={() => handleReject(article.id)}
+                      disabled={processingId === article.id}
+                      className="px-5 py-2 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition disabled:opacity-50 text-sm"
+                    >
+                      Reject
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }
