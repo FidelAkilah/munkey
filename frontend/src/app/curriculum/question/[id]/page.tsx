@@ -151,7 +151,7 @@ export default function QuestionDetailPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          category: question.category || 1,
+          category: question.category,
           submission_type: "TEXT",
           text_content: textContent,
           question: parseInt(questionId),

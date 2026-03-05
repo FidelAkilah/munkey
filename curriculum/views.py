@@ -121,7 +121,11 @@ class SubmissionCreateView(generics.CreateAPIView):
         """Run DiplomAI review on the submission."""
         try:
             question_prompt = submission.question.prompt if submission.question else ""
-            category_type = submission.category.category_type
+            # Prefer the question's category for accurate review type detection
+            if submission.question and submission.question.category:
+                category_type = submission.question.category.category_type
+            else:
+                category_type = submission.category.category_type
 
             # Get text content — extract from file if text_content is empty
             text_content = submission.text_content

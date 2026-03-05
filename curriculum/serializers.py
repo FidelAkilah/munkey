@@ -13,10 +13,11 @@ class LessonSerializer(serializers.ModelSerializer):
 
 class PracticeQuestionSerializer(serializers.ModelSerializer):
     category_name = serializers.ReadOnlyField(source='category.name')
+    category_type = serializers.ReadOnlyField(source='category.category_type')
 
     class Meta:
         model = PracticeQuestion
-        fields = ['id', 'title', 'prompt', 'question_type', 'difficulty', 'hints', 'category_name', 'created_at']
+        fields = ['id', 'category', 'title', 'prompt', 'question_type', 'difficulty', 'hints', 'category_name', 'category_type', 'created_at']
 
 
 class CurriculumCategorySerializer(serializers.ModelSerializer):
