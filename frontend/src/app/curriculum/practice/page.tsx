@@ -75,15 +75,22 @@ function PracticeContent() {
     setGenerating(true);
     try {
       const token = (session as any)?.user?.accessToken;
-      const cat = categories.find((c: any) => c.slug === selectedCategory);
+      const cat = categories.find((c: any) => c.slug === selectedCategory)
+        || categories.find((c: any) => String(c.id) === selectedCategory);
       const categoryType = cat?.category_type || "GENERAL";
       const res = await fetch(`${API_BASE}/api/curriculum/generate-questions/`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ category_type: categoryType, difficulty: selectedDifficulty || "INT", count: 3 }),
       });
-      if (res.ok) { const data = await res.json(); setAiQuestions(data.questions || []); }
-    } catch (err) { console.error("Generate failed:", err); }
+      if (res.ok) {
+        const data = await res.json();
+        setAiQuestions(data.questions || []);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.detail || "Failed to generate questions. Please try logging out and back in.");
+      }
+    } catch (err) { console.error("Generate failed:", err); alert("Network error generating questions. Please try again."); }
     finally { setGenerating(false); }
   };
 
