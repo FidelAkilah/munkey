@@ -139,3 +139,24 @@ class UserProgress(models.Model):
     def __str__(self):
         status = '✅' if self.completed else '⬜'
         return f"{status} {self.user.username} — {self.lesson.title}"
+
+
+class ChatMessage(models.Model):
+    """Chat messages between user and DiplomAI about a question or topic."""
+    ROLE_CHOICES = [
+        ('user', 'User'),
+        ('assistant', 'DiplomAI'),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_messages', on_delete=models.CASCADE)
+    question = models.ForeignKey(PracticeQuestion, related_name='chat_messages', on_delete=models.CASCADE, null=True, blank=True)
+    session_id = models.CharField(max_length=64, db_index=True, help_text="Groups messages in a conversation")
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"[{self.role}] {self.content[:60]}..."

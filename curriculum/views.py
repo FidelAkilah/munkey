@@ -5,14 +5,14 @@ from rest_framework.response import Response
 
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
-    Submission, AIFeedback, UserProgress,
+    Submission, AIFeedback, UserProgress, ChatMessage,
 )
 from .serializers import (
     CurriculumCategorySerializer, CurriculumCategoryListSerializer,
     LessonSerializer, PracticeQuestionSerializer,
     SubmissionSerializer, SubmissionCreateSerializer,
     AIFeedbackSerializer, UserProgressSerializer,
-    GenerateQuestionsSerializer,
+    GenerateQuestionsSerializer, ChatMessageSerializer, ChatSendSerializer,
 )
 from . import ai_service
 
@@ -228,7 +228,7 @@ def mark_lesson_complete(request, lesson_id):
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def curriculum_stats(request):
-    """Get user's curriculum dashboard stats."""
+    """Get user's curriculum dashboard stats — comprehensive progress overview."""
     user = request.user
     total_lessons = Lesson.objects.count()
     completed_lessons = UserProgress.objects.filter(user=user, completed=True).count()
@@ -237,12 +237,52 @@ def curriculum_stats(request):
 
     avg_score = 0
     if reviewed_submissions > 0:
-        from django.db.models import Avg
-        avg_score = (
+        from django.db.models import Avg, Max, Min, Count
+        score_stats = (
             AIFeedback.objects
             .filter(submission__user=user)
-            .aggregate(avg=Avg('overall_score'))['avg']
-        ) or 0
+            .aggregate(
+                avg=Avg('overall_score'),
+                best=Max('overall_score'),
+                lowest=Min('overall_score'),
+            )
+        )
+        avg_score = score_stats['avg'] or 0
+
+        # Per-category breakdown
+        category_stats = (
+            Submission.objects
+            .filter(user=user, status='REVIEWED')
+            .values('category__name', 'category__category_type')
+            .annotate(
+                count=Count('id'),
+                avg_score=Avg('feedback__overall_score'),
+                best_score=Max('feedback__overall_score'),
+            )
+            .order_by('-avg_score')
+        )
+
+        # Recent scores for trend
+        recent_scores = list(
+            AIFeedback.objects
+            .filter(submission__user=user)
+            .order_by('-created_at')
+            .values_list('overall_score', flat=True)[:10]
+        )
+    else:
+        score_stats = {'avg': 0, 'best': 0, 'lowest': 0}
+        category_stats = []
+        recent_scores = []
+
+    # Skill level estimation based on average score
+    if avg_score >= 85:
+        skill_level = "Advanced"
+    elif avg_score >= 65:
+        skill_level = "Intermediate"
+    elif avg_score > 0:
+        skill_level = "Beginner"
+    else:
+        skill_level = "New Delegate"
 
     return Response({
         "total_lessons": total_lessons,
@@ -251,4 +291,86 @@ def curriculum_stats(request):
         "total_submissions": total_submissions,
         "reviewed_submissions": reviewed_submissions,
         "average_score": round(avg_score, 1),
+        "best_score": score_stats.get('best') or 0,
+        "lowest_score": score_stats.get('lowest') or 0,
+        "skill_level": skill_level,
+        "category_breakdown": list(category_stats) if category_stats else [],
+        "recent_scores": recent_scores,
     })
+
+
+# ── DiplomAI Chat ────────────────────────────────────────────
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def chat_send(request):
+    """Send a message to DiplomAI and get a response."""
+    import uuid
+
+    serializer = ChatSendSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    user_message = serializer.validated_data['message']
+    session_id = serializer.validated_data.get('session_id') or str(uuid.uuid4())[:16]
+    question_id = serializer.validated_data.get('question_id')
+
+    question = None
+    question_context = ""
+    if question_id:
+        try:
+            question = PracticeQuestion.objects.get(pk=question_id)
+            question_context = f"Title: {question.title}\nType: {question.get_question_type_display()}\nPrompt: {question.prompt}"
+            if question.hints:
+                question_context += f"\nHints: {question.hints}"
+        except PracticeQuestion.DoesNotExist:
+            pass
+
+    # Save user message
+    ChatMessage.objects.create(
+        user=request.user,
+        question=question,
+        session_id=session_id,
+        role='user',
+        content=user_message,
+    )
+
+    # Build conversation history
+    history = ChatMessage.objects.filter(
+        user=request.user,
+        session_id=session_id,
+    ).order_by('created_at').values('role', 'content')
+
+    messages = list(history)
+
+    # Get AI response
+    ai_response = ai_service.chat_with_diplomai(messages, question_context)
+
+    # Save AI response
+    ai_msg = ChatMessage.objects.create(
+        user=request.user,
+        question=question,
+        session_id=session_id,
+        role='assistant',
+        content=ai_response,
+    )
+
+    return Response({
+        "session_id": session_id,
+        "response": ChatMessageSerializer(ai_msg).data,
+    }, status=status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def chat_history(request):
+    """Get chat history for a session."""
+    session_id = request.query_params.get('session_id')
+    if not session_id:
+        return Response({"error": "session_id is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    messages = ChatMessage.objects.filter(
+        user=request.user,
+        session_id=session_id,
+    ).order_by('created_at')
+
+    return Response(ChatMessageSerializer(messages, many=True).data)

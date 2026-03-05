@@ -1,0 +1,597 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+"use client";
+
+import { useEffect, useState, useRef, useCallback } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { motion, AnimatePresence } from "framer-motion";
+
+const API_BASE = "https://mun-global.onrender.com";
+
+const difficultyLabel: Record<string, { label: string; color: string }> = {
+  BEG: { label: "Beginner", color: "bg-green-100 text-green-700" },
+  INT: { label: "Intermediate", color: "bg-orange-100 text-[#C66810]" },
+  ADV: { label: "Advanced", color: "bg-red-100 text-red-700" },
+};
+
+const typeLabel: Record<string, { label: string; icon: string }> = {
+  SPEECH: { label: "Speech Prompt", icon: "🎤" },
+  DRAFT: { label: "Draft Resolution", icon: "📜" },
+  NEGOTIATION: { label: "Negotiation", icon: "🤝" },
+  QUIZ: { label: "Quiz", icon: "❓" },
+  OPEN: { label: "Open-Ended", icon: "💬" },
+};
+
+interface ChatMsg {
+  id?: number;
+  role: "user" | "assistant";
+  content: string;
+  created_at?: string;
+}
+
+export default function QuestionDetailPage() {
+  const params = useParams();
+  const questionId = params.id as string;
+  const { data: session } = useSession();
+  const token = (session as any)?.user?.accessToken;
+
+  const [question, setQuestion] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"details" | "chat" | "submit">("details");
+
+  // Chat state
+  const [messages, setMessages] = useState<ChatMsg[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sessionId, setSessionId] = useState("");
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Submit state
+  const [textContent, setTextContent] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const [feedback, setFeedback] = useState<any>(null);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    async function fetchQuestion() {
+      try {
+        const res = await fetch(`${API_BASE}/api/curriculum/questions/${questionId}/`);
+        if (res.ok) setQuestion(await res.json());
+      } catch (err) {
+        console.error("Failed to fetch question:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    if (questionId) fetchQuestion();
+  }, [questionId]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  // Initialize chat with a welcome message
+  useEffect(() => {
+    if (question && messages.length === 0) {
+      setMessages([
+        {
+          role: "assistant",
+          content: `Hey there! 👋 I'm **Bongo**, your DiplomAI strategist. I see you're working on **"${question.title}"**.\n\nFeel free to ask me anything about this exercise — I can help you brainstorm approaches, explain concepts, or give you hints. What would you like to know?`,
+        },
+      ]);
+    }
+  }, [question, messages.length]);
+
+  const sendMessage = useCallback(async () => {
+    if (!chatInput.trim() || sending) return;
+    if (!token) {
+      alert("Please log in to chat with DiplomAI.");
+      return;
+    }
+
+    const userMsg: ChatMsg = { role: "user", content: chatInput.trim() };
+    setMessages((prev) => [...prev, userMsg]);
+    setChatInput("");
+    setSending(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/curriculum/chat/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: userMsg.content,
+          session_id: sessionId || undefined,
+          question_id: parseInt(questionId),
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (!sessionId) setSessionId(data.session_id);
+        setMessages((prev) => [...prev, data.response]);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Sorry, I had trouble processing that. Please try again!" },
+        ]);
+      }
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: "Connection error. Please try again in a moment." },
+      ]);
+    } finally {
+      setSending(false);
+    }
+  }, [chatInput, sending, token, sessionId, questionId]);
+
+  const handleSubmit = async () => {
+    if (!textContent.trim()) {
+      setSubmitError("Please write your response before submitting.");
+      return;
+    }
+    if (!token) {
+      setSubmitError("Please log in to submit.");
+      return;
+    }
+
+    setSubmitting(true);
+    setSubmitError("");
+    setFeedback(null);
+
+    try {
+      const res = await fetch(`${API_BASE}/api/curriculum/submissions/create/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          category: question.category || 1,
+          submission_type: "TEXT",
+          text_content: textContent,
+          question: parseInt(questionId),
+        }),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || JSON.stringify(errData) || "Submission failed");
+      }
+
+      const data = await res.json();
+      if (data.feedback) {
+        setFeedback(data.feedback);
+      } else {
+        // Poll for feedback
+        let attempts = 0;
+        const pollInterval = setInterval(async () => {
+          attempts++;
+          try {
+            const detailRes = await fetch(`${API_BASE}/api/curriculum/submissions/${data.id}/`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (detailRes.ok) {
+              const detailData = await detailRes.json();
+              if (detailData.feedback) {
+                setFeedback(detailData.feedback);
+                clearInterval(pollInterval);
+              }
+            }
+          } catch { /* continue */ }
+          if (attempts >= 15) clearInterval(pollInterval);
+        }, 2000);
+      }
+    } catch (err: any) {
+      setSubmitError(err.message || "Something went wrong.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-4xl animate-bounce">🐵</div>
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-4xl mb-3">🔍</div>
+          <h2 className="text-xl font-bold text-slate-700">Question not found</h2>
+          <Link href="/curriculum/practice" className="text-[#C66810] font-bold mt-4 inline-block">
+            &larr; Back to Practice
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const type = typeLabel[question.question_type] || typeLabel.OPEN;
+  const diff = difficultyLabel[question.difficulty] || difficultyLabel.BEG;
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Hero */}
+      <section className="relative overflow-hidden bg-[#0a1628] grain">
+        <div className="absolute top-0 right-0 -mr-32 -mt-32 w-[500px] h-[500px] bg-[#C66810]/10 rounded-full blur-[100px]" />
+        <div className="max-w-6xl mx-auto px-6 pt-28 pb-10 relative z-10">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
+            <Link
+              href="/curriculum/practice"
+              className="text-slate-400 hover:text-[#C66810] text-sm font-medium mb-4 inline-flex items-center gap-1 transition-colors"
+            >
+              &larr; Back to Practice Arena
+            </Link>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="w-14 h-14 rounded-xl bg-[#C66810]/20 text-[#C66810] flex items-center justify-center text-3xl">
+                {type.icon}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-bold uppercase tracking-widest text-white/60 bg-white/10 px-2 py-0.5 rounded">
+                    {type.label}
+                  </span>
+                  <span className={`text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded ${diff.color}`}>
+                    {diff.label}
+                  </span>
+                </div>
+                <h1 className="text-2xl md:text-3xl font-black text-white">{question.title}</h1>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Tab Navigation */}
+      <div className="max-w-6xl mx-auto px-6 mt-6">
+        <div className="flex gap-1 bg-white rounded-xl p-1.5 border border-slate-200 shadow-sm inline-flex">
+          {[
+            { key: "details" as const, label: "📋 Exercise Details", icon: "" },
+            { key: "chat" as const, label: "🐵 Ask Bongo", icon: "" },
+            { key: "submit" as const, label: "📤 Submit Answer", icon: "" },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-5 py-2.5 rounded-lg text-sm font-bold transition-all ${
+                activeTab === tab.key
+                  ? "bg-[#C66810] text-white shadow-sm"
+                  : "text-slate-600 hover:bg-slate-50 hover:text-slate-800"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <AnimatePresence mode="wait">
+          {/* ── Details Tab ── */}
+          {activeTab === "details" && (
+            <motion.div
+              key="details"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* Main Prompt */}
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+                  <span className="w-8 h-8 rounded-lg bg-orange-100 text-[#C66810] flex items-center justify-center text-sm">📝</span>
+                  Exercise Prompt
+                </h2>
+                <div className="text-slate-700 leading-relaxed whitespace-pre-line text-[15px]">{question.prompt}</div>
+              </div>
+
+              {/* Hints */}
+              {question.hints && (
+                <div className="bg-orange-50 rounded-2xl p-6 border border-orange-200">
+                  <h3 className="font-bold text-[#C66810] mb-3 flex items-center gap-2">
+                    <span>💡</span> Hints & Tips
+                  </h3>
+                  <p className="text-sm text-slate-700 whitespace-pre-line">{question.hints}</p>
+                </div>
+              )}
+
+              {/* Key Concepts (if available from AI-generated) */}
+              {question.key_concepts && (
+                <div className="bg-blue-50 rounded-2xl p-6 border border-blue-200">
+                  <h3 className="font-bold text-blue-700 mb-3 flex items-center gap-2">
+                    <span>🎯</span> Key Concepts Tested
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {question.key_concepts.split(",").map((concept: string, i: number) => (
+                      <span key={i} className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
+                        {concept.trim()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setActiveTab("chat")}
+                  className="px-6 py-3 bg-white text-slate-700 font-bold rounded-xl border border-slate-200 hover:border-[#C66810] hover:text-[#C66810] transition-all text-sm"
+                >
+                  🐵 Ask Bongo for Help
+                </button>
+                <button
+                  onClick={() => setActiveTab("submit")}
+                  className="px-6 py-3 bg-[#C66810] text-white font-bold rounded-xl shadow-sm hover:bg-[#A05200] transition-all text-sm"
+                >
+                  📤 Submit My Answer
+                </button>
+                <Link
+                  href={`/curriculum/submit?prompt=${encodeURIComponent(question.prompt)}&type=${question.question_type}`}
+                  className="px-6 py-3 bg-slate-100 text-slate-600 font-bold rounded-xl hover:bg-slate-200 transition-all text-sm flex items-center"
+                >
+                  Open Full Submit Page &rarr;
+                </Link>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Chat Tab ── */}
+          {activeTab === "chat" && (
+            <motion.div
+              key="chat"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="flex flex-col h-[calc(100vh-320px)] min-h-[500px]"
+            >
+              {/* Chat Messages */}
+              <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-slate-200 p-6 mb-4 space-y-4">
+                {messages.map((msg, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.05 }}
+                    className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                  >
+                    {msg.role === "assistant" && (
+                      <div className="w-9 h-9 rounded-full bg-[#C66810]/10 flex items-center justify-center text-lg flex-shrink-0 mt-1">
+                        🐵
+                      </div>
+                    )}
+                    <div
+                      className={`max-w-[75%] rounded-2xl px-5 py-3.5 ${
+                        msg.role === "user"
+                          ? "bg-[#C66810] text-white rounded-br-md"
+                          : "bg-slate-50 text-slate-700 border border-slate-200 rounded-bl-md"
+                      }`}
+                    >
+                      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                        {msg.content.split(/(\*\*.*?\*\*)/g).map((part, j) =>
+                          part.startsWith("**") && part.endsWith("**") ? (
+                            <strong key={j}>{part.slice(2, -2)}</strong>
+                          ) : (
+                            <span key={j}>{part}</span>
+                          )
+                        )}
+                      </div>
+                    </div>
+                    {msg.role === "user" && (
+                      <div className="w-9 h-9 rounded-full bg-slate-200 flex items-center justify-center text-sm font-bold text-slate-600 flex-shrink-0 mt-1">
+                        You
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+
+                {sending && (
+                  <div className="flex gap-3 justify-start">
+                    <div className="w-9 h-9 rounded-full bg-[#C66810]/10 flex items-center justify-center text-lg flex-shrink-0">
+                      🐵
+                    </div>
+                    <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-bl-md px-5 py-4">
+                      <div className="flex gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-[#C66810] animate-bounce" style={{ animationDelay: "0ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-[#C66810] animate-bounce" style={{ animationDelay: "150ms" }} />
+                        <div className="w-2 h-2 rounded-full bg-[#C66810] animate-bounce" style={{ animationDelay: "300ms" }} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat Input */}
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
+                  placeholder="Ask Bongo anything about this exercise..."
+                  className="flex-1 px-5 py-3.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:ring-2 focus:ring-[#C66810]/30 focus:border-[#C66810] shadow-sm bg-white"
+                  disabled={sending}
+                />
+                <button
+                  onClick={sendMessage}
+                  disabled={sending || !chatInput.trim()}
+                  className="px-6 py-3.5 bg-[#C66810] text-white font-bold rounded-xl shadow-sm hover:bg-[#A05200] disabled:opacity-50 transition-all text-sm flex items-center gap-2"
+                >
+                  {sending ? "..." : "Send"}
+                  {!sending && <span>→</span>}
+                </button>
+              </div>
+
+              {/* Quick Prompts */}
+              <div className="flex flex-wrap gap-2 mt-3">
+                {[
+                  "How should I approach this?",
+                  "Give me a hint",
+                  "What are common mistakes?",
+                  "Explain the key concepts",
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => {
+                      setChatInput(prompt);
+                    }}
+                    className="px-3 py-1.5 bg-white text-xs font-medium text-slate-500 border border-slate-200 rounded-full hover:border-[#C66810] hover:text-[#C66810] transition-colors"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {/* ── Submit Tab ── */}
+          {activeTab === "submit" && (
+            <motion.div
+              key="submit"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.3 }}
+              className="space-y-6"
+            >
+              {/* Compact prompt reminder */}
+              <div className="bg-orange-50 rounded-xl p-4 border border-orange-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <span>🐵</span>
+                  <span className="font-bold text-[#C66810] text-sm">Exercise Prompt</span>
+                </div>
+                <p className="text-xs text-slate-600 line-clamp-3">{question.prompt}</p>
+              </div>
+
+              {/* Feedback Display */}
+              <AnimatePresence>
+                {feedback && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.96 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="bg-white border border-slate-200 rounded-2xl p-8 shadow-lg"
+                  >
+                    <div className="flex items-center gap-3 mb-6">
+                      <span className="text-4xl">🐵</span>
+                      <div>
+                        <h2 className="text-2xl font-black text-slate-900 font-playfair">Bongo&apos;s Feedback</h2>
+                        <p className="text-xs text-slate-500">Powered by DiplomAI</p>
+                      </div>
+                      <div className="ml-auto text-center">
+                        <motion.div
+                          initial={{ scale: 0 }}
+                          animate={{ scale: 1 }}
+                          transition={{ delay: 0.3, type: "spring" }}
+                          className="text-4xl font-black text-[#C66810]"
+                        >
+                          {feedback.overall_score}
+                        </motion.div>
+                        <div className="text-xs text-slate-500 font-medium">/ 100</div>
+                      </div>
+                    </div>
+
+                    <div className="w-full bg-slate-100 rounded-full h-3 mb-6 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${feedback.overall_score}%` }}
+                        transition={{ duration: 1.2, delay: 0.4 }}
+                        className="h-3 rounded-full bg-[#C66810]"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                      <div className="bg-green-50 rounded-xl p-5 border border-green-200">
+                        <h3 className="font-bold text-green-700 mb-2">Strengths</h3>
+                        <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.strengths}</p>
+                      </div>
+                      <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
+                        <h3 className="font-bold text-[#C66810] mb-2">Areas for Improvement</h3>
+                        <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.improvements}</p>
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-4">
+                      <h3 className="font-bold text-slate-800 mb-2">Detailed Analysis</h3>
+                      <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.detailed_feedback}</p>
+                    </div>
+
+                    <div className="bg-orange-50 rounded-xl p-5 border border-orange-200">
+                      <h3 className="font-bold text-[#C66810] mb-2">Next Steps</h3>
+                      <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.suggestions}</p>
+                    </div>
+
+                    <div className="mt-6 flex gap-3">
+                      <button
+                        onClick={() => setActiveTab("chat")}
+                        className="px-5 py-2 bg-white text-slate-700 font-bold rounded-lg border border-slate-200 hover:border-[#C66810] hover:text-[#C66810] transition-colors text-sm"
+                      >
+                        🐵 Discuss with Bongo
+                      </button>
+                      <button
+                        onClick={() => { setFeedback(null); setTextContent(""); }}
+                        className="px-5 py-2 bg-slate-100 text-slate-700 font-bold rounded-lg hover:bg-slate-200 transition-colors text-sm"
+                      >
+                        📝 Try Again
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Submit Form */}
+              {!feedback && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1.5">
+                      Your Response *
+                    </label>
+                    <textarea
+                      value={textContent}
+                      onChange={(e) => setTextContent(e.target.value)}
+                      rows={14}
+                      placeholder="Write your response here... Bongo will review it and give you detailed feedback!"
+                      className="w-full px-4 py-3 rounded-xl border border-slate-200 text-slate-700 focus:ring-2 focus:ring-[#C66810]/30 focus:border-[#C66810] resize-y font-mono text-sm shadow-sm"
+                    />
+                  </div>
+
+                  {submitError && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 text-sm">
+                      ⚠️ {submitError}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleSubmit}
+                    disabled={submitting || !textContent.trim()}
+                    className="w-full py-4 bg-[#C66810] text-white font-bold text-lg rounded-xl shadow-sm hover:bg-[#A05200] disabled:opacity-60 transition-all"
+                  >
+                    {submitting ? (
+                      <span className="flex items-center justify-center gap-3">
+                        <span className="animate-bounce">🐵</span>
+                        Bongo is reviewing...
+                      </span>
+                    ) : (
+                      "Submit for DiplomAI Review"
+                    )}
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </main>
+    </div>
+  );
+}

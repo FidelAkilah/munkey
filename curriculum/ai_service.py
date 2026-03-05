@@ -22,24 +22,42 @@ except ImportError:
     logger.warning("openai package not installed. AI features will be unavailable.")
 
 
-DIPLOMAI_SYSTEM_PROMPT = """You are DiplomAI, an expert Model United Nations (MUN) coach and strategist. 
-Your mascot is Bongo the Strategist — a wise, encouraging owl who guides delegates toward excellence.
+DIPLOMAI_SYSTEM_PROMPT = """You are DiplomAI (codename "Bongo"), an expert Model United Nations (MUN) strategist and coach.
+You are the AI engine behind MUNKEY, a platform dedicated to MUN excellence.
 
-Your role is to provide detailed, constructive, and actionable feedback on MUN-related submissions.
-You are an expert on:
-- Speech & Public Speaking (delivery, structure, rhetoric, persuasion)
-- Draft Resolution Writing (format, operative/preambulatory clauses, UN style)
-- Negotiation & Diplomacy (bloc building, compromise, lobbying tactics)
-- Research & Position Papers (depth, accuracy, policy proposals)
-- Rules of Procedure (motions, points, parliamentary procedure)
+Your persona:
+- Wise, encouraging, and deeply knowledgeable about all aspects of MUN
+- You use a professional yet approachable tone — think "senior delegate mentoring a newcomer"
+- You sign off important feedback as "— Bongo 🦉"
 
-Always:
-- Be encouraging but honest
-- Point out specific strengths
-- Give specific, actionable improvements
-- Reference MUN best practices
-- Use a professional yet approachable tone
-- Sign off feedback as "— Bongo 🦉"
+Your expertise covers:
+- Speech & Public Speaking: delivery, structure, rhetoric, persuasion, vocal variety, body language cues
+- Draft Resolution Writing: UN formatting (PP/OP clauses), policy feasibility, language precision, diplomatic style
+- Negotiation & Diplomacy: bloc building, compromise crafting, lobbying tactics, caucus strategy
+- Research & Position Papers: depth, accuracy, sourcing, policy proposals, country alignment
+- Rules of Procedure: motions, points, parliamentary flow, chairing best practices
+- Conference Strategy: award criteria, committee dynamics, crisis response, portfolio management
+
+When providing feedback:
+- Always be encouraging but honest — celebrate what's done well before addressing gaps
+- Give specific, actionable improvements with examples when possible
+- Reference real MUN best practices, UN document styles, and diplomatic conventions
+- Tailor difficulty and depth to the user's apparent skill level
+- When generating practice questions, make them scenario-based and realistic
+"""
+
+DIPLOMAI_CHAT_PROMPT = """You are DiplomAI (codename "Bongo"), an expert MUN coach integrated into the MUNKEY learning platform.
+You are chatting with a delegate who wants to improve their MUN skills.
+
+Guidelines for conversation:
+- Be concise but thorough — answer questions clearly without unnecessary padding
+- If they ask about a specific practice question, reference it directly and help them think through it
+- Offer strategic advice, examples, and tips from real MUN conferences
+- If they share their work, give quick constructive feedback
+- Use markdown formatting for clarity (bold, bullet points, etc.)
+- Keep responses under 300 words unless they ask for a deep dive
+- Be encouraging and build their confidence while being honest about areas to improve
+- If they seem stuck, offer hints and guiding questions rather than giving away answers
 """
 
 
@@ -105,13 +123,14 @@ def review_draft_resolution(text_content: str, question_prompt: str = "") -> dic
 === END ===
 
 Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100
-- "strengths": string with bullet points of what's done well
-- "improvements": string with bullet points of what needs improvement  
-- "detailed_feedback": string with paragraph-form detailed analysis
-- "suggestions": string with numbered actionable next steps
+- "overall_score": integer 0-100 (be fair but encouraging — a solid beginner draft might be 50-65, a good intermediate draft 65-80, an excellent advanced draft 80-95)
+- "strengths": string with bullet points of what's done well (be specific — quote exact phrases)
+- "improvements": string with bullet points of what needs improvement (give examples of how to fix each issue)
+- "detailed_feedback": string with paragraph-form detailed analysis covering structure, content, formatting, and strategy
+- "suggestions": string with numbered actionable next steps the delegate can take immediately
 
-Focus on: clause structure, UN formatting, policy feasibility, language precision, and diplomatic tone."""
+Focus on: preambulatory clause structure (PP), operative clause structure (OP), UN formatting conventions, policy feasibility, language precision, diplomatic tone, and whether the resolution addresses the actual issue comprehensively.
+If the student is clearly a beginner, be encouraging and focus on 2-3 key improvements rather than overwhelming them."""
 
     return _call_openai(client, user_prompt)
 
@@ -131,13 +150,14 @@ def review_speech(text_content: str = "", video_url: str = "", question_prompt: 
 === END ===
 
 Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100
-- "strengths": string with bullet points of what's done well
-- "improvements": string with bullet points of what needs improvement
+- "overall_score": integer 0-100 (be fair — a decent first speech might score 45-60, a strong intermediate speech 65-80, an award-winning speech 85-100)
+- "strengths": string with bullet points of what's done well (quote specific phrases or structural elements)
+- "improvements": string with bullet points of what needs improvement (provide concrete examples and rewrites where helpful)
 - "detailed_feedback": string with paragraph-form detailed analysis
 - "suggestions": string with numbered actionable next steps
 
-Focus on: opening hook, argument structure, rhetorical devices, diplomatic language, persuasiveness, and closing impact."""
+Focus on: opening hook effectiveness, argument structure and flow, rhetorical devices (anaphora, tricolon, etc.), diplomatic language vs. aggressive tone, use of evidence and statistics, emotional appeal balance, closing impact and call to action.
+Assess whether the speech would be effective in a real MUN committee and suggest committee-specific strategies."""
 
     return _call_openai(client, user_prompt)
 
@@ -156,12 +176,13 @@ def review_negotiation(text_content: str, question_prompt: str = "") -> dict:
 
 Provide your review as JSON with these exact keys:
 - "overall_score": integer 0-100
-- "strengths": string with bullet points of what's done well
-- "improvements": string with bullet points of what needs improvement
+- "strengths": string with bullet points of what's done well (be specific about diplomatic strategy)
+- "improvements": string with bullet points of what needs improvement (suggest alternative approaches)
 - "detailed_feedback": string with paragraph-form detailed analysis
 - "suggestions": string with numbered actionable next steps
 
-Focus on: strategic thinking, coalition awareness, compromise proposals, diplomatic language, and realistic policy approaches."""
+Focus on: strategic thinking and long-term planning, coalition/bloc awareness and building, compromise proposals and their feasibility, diplomatic language and tact, realistic policy approaches that align with country positions, understanding of power dynamics within the committee.
+Consider whether the approach would realistically achieve the delegate's goals in a committee setting."""
 
     return _call_openai(client, user_prompt)
 
@@ -192,16 +213,37 @@ def generate_practice_questions(category_type: str, difficulty: str = "INT", cou
     """Generate practice questions dynamically using AI."""
     client = get_client()
 
-    user_prompt = f"""Generate {count} MUN practice exercises for the category: {category_type}
-Difficulty level: {difficulty}
+    difficulty_desc = {
+        "BEG": "Beginner — suitable for first-time or novice MUN delegates. Focus on fundamentals, basic formatting, and introductory scenarios.",
+        "INT": "Intermediate — for delegates with 2-5 conferences of experience. Include nuanced scenarios, multi-party dynamics, and more complex topics.",
+        "ADV": "Advanced — for experienced delegates competing at national/international level. Include crisis scenarios, advanced drafting, and sophisticated strategy challenges.",
+    }.get(difficulty, "Intermediate")
+
+    category_guidance = {
+        "SPEECH": "Focus on opening statements, general debate speeches, and caucus interventions. Include specific country positions on real-world issues.",
+        "DRAFT": "Focus on resolution drafting with proper PP/OP clause structure. Include real UN topics and require proper formatting.",
+        "NEGOTIATION": "Create multi-party negotiation scenarios with conflicting interests and potential compromise zones. Include bloc dynamics.",
+        "RESEARCH": "Focus on position paper writing, country research methodology, and policy analysis for specific agenda items.",
+        "PROCEDURE": "Cover motions, points of order, voting procedures, and parliamentary flow. Include scenario-based procedural challenges.",
+        "GENERAL": "Mix of general MUN skills including conference preparation, committee strategy, and delegate etiquette.",
+    }.get(category_type, "General MUN practice exercises.")
+
+    user_prompt = f"""Generate {count} MUN practice exercises.
+
+Category: {category_type}
+Difficulty: {difficulty_desc}
+Category Guidance: {category_guidance}
 
 Return as a JSON array where each item has:
-- "title": short exercise title
-- "prompt": detailed exercise prompt/scenario (2-3 paragraphs)
-- "hints": helpful hints for the student
+- "title": short, engaging exercise title (5-10 words)
+- "prompt": detailed exercise prompt/scenario (2-3 paragraphs with specific context, country names, committee names, and realistic details)
+- "hints": 2-3 helpful hints for the student, separated by semicolons
 - "question_type": one of SPEECH, DRAFT, NEGOTIATION, QUIZ, OPEN
+- "key_concepts": comma-separated list of 3-5 key MUN concepts this exercise tests
+- "sample_approach": a brief 2-sentence description of how a strong delegate would approach this
 
-Make them realistic, educational, and progressively challenging."""
+Make them realistic, educational, and based on actual UN committees and real-world issues.
+Ensure progressively challenging content within the difficulty tier."""
 
     try:
         response = client.chat.completions.create(
@@ -259,3 +301,42 @@ def _call_openai(client, user_prompt: str) -> dict:
             "detailed_feedback": f"DiplomAI encountered an error processing your submission. Please try again. (Error: {str(e)})",
             "suggestions": "Try resubmitting, or contact support if the issue persists.",
         }
+
+
+def chat_with_diplomai(messages: list, question_context: str = "") -> str:
+    """
+    Have a conversation with DiplomAI.
+    
+    Args:
+        messages: List of dicts with 'role' and 'content' keys (conversation history)
+        question_context: Optional context about the current practice question
+    
+    Returns:
+        The assistant's response text
+    """
+    client = get_client()
+
+    system_msg = DIPLOMAI_CHAT_PROMPT
+    if question_context:
+        system_msg += f"\n\nThe delegate is currently working on this practice exercise:\n{question_context}\n\nHelp them with this exercise specifically if they ask about it."
+
+    openai_messages = [{"role": "system", "content": system_msg}]
+    
+    # Include up to last 20 messages for context
+    for msg in messages[-20:]:
+        openai_messages.append({
+            "role": msg["role"],
+            "content": msg["content"],
+        })
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=openai_messages,
+            temperature=0.7,
+            max_tokens=1000,
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.error(f"DiplomAI chat error: {e}")
+        return "I'm having trouble processing your message right now. Please try again in a moment! — Bongo 🦉"

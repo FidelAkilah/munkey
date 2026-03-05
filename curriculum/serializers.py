@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
-    Submission, AIFeedback, UserProgress,
+    Submission, AIFeedback, UserProgress, ChatMessage,
 )
 
 
@@ -110,3 +110,17 @@ class GenerateQuestionsSerializer(serializers.Serializer):
     category_type = serializers.ChoiceField(choices=[c[0] for c in CurriculumCategory.CATEGORY_CHOICES])
     difficulty = serializers.ChoiceField(choices=['BEG', 'INT', 'ADV'], default='INT')
     count = serializers.IntegerField(min_value=1, max_value=5, default=3)
+
+
+class ChatMessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ChatMessage
+        fields = ['id', 'role', 'content', 'created_at']
+        read_only_fields = ['id', 'role', 'created_at']
+
+
+class ChatSendSerializer(serializers.Serializer):
+    """Serializer for sending a chat message to DiplomAI."""
+    message = serializers.CharField(max_length=2000)
+    session_id = serializers.CharField(max_length=64, required=False)
+    question_id = serializers.IntegerField(required=False, allow_null=True)

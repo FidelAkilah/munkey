@@ -167,10 +167,23 @@ function PracticeContent() {
                     <h3 className="font-bold text-slate-900 text-sm mb-1.5">{q.title}</h3>
                     <p className="text-xs text-slate-600 mb-3 line-clamp-4">{q.prompt}</p>
                     {q.hints && (<p className="text-[10px] text-[#C66810] bg-orange-100/50 p-1.5 rounded mb-3">💡 {q.hints}</p>)}
-                    <Link href={`/curriculum/submit?prompt=${encodeURIComponent(q.prompt)}&type=${q.question_type}`}
-                      className="text-xs font-bold text-[#C66810] hover:text-[#A05200] transition-colors">
-                      Attempt this &rarr;
-                    </Link>
+                    <div className="flex gap-3 items-center">
+                      <Link href={`/curriculum/submit?prompt=${encodeURIComponent(q.prompt)}&type=${q.question_type}`}
+                        className="text-xs font-bold text-[#C66810] hover:text-[#A05200] transition-colors">
+                        Quick Submit &rarr;
+                      </Link>
+                      <span className="text-slate-300">|</span>
+                      <button
+                        onClick={() => {
+                          // Store AI question in sessionStorage for detail page
+                          sessionStorage.setItem('ai_question', JSON.stringify(q));
+                          window.location.href = `/curriculum/submit?prompt=${encodeURIComponent(q.prompt)}&type=${q.question_type}`;
+                        }}
+                        className="text-xs font-bold text-slate-500 hover:text-[#C66810] transition-colors"
+                      >
+                        View Details + Chat 🐵
+                      </button>
+                    </div>
                   </motion.div>
                 ))}
               </div>
@@ -210,10 +223,17 @@ function PracticeContent() {
                     <h3 className="font-bold text-base text-slate-900 mb-1.5">{q.title}</h3>
                     <p className="text-xs text-slate-500 line-clamp-3 mb-3">{q.prompt}</p>
                     {q.hints && (<p className="text-[10px] text-[#C66810] bg-orange-50 p-1.5 rounded mb-3">💡 {q.hints}</p>)}
-                    <Link href={`/curriculum/submit?question=${q.id}&category=${q.category_name}`}
-                      className="text-xs font-bold text-[#C66810] hover:text-[#A05200] transition-colors">
-                      Attempt this exercise &rarr;
-                    </Link>
+                    <div className="flex gap-3 items-center">
+                      <Link href={`/curriculum/question/${q.id}`}
+                        className="text-xs font-bold text-[#C66810] hover:text-[#A05200] transition-colors">
+                        View Details + Chat 🐵
+                      </Link>
+                      <span className="text-slate-300">|</span>
+                      <Link href={`/curriculum/submit?question=${q.id}&category=${q.category_name}`}
+                        className="text-xs font-bold text-slate-500 hover:text-[#C66810] transition-colors">
+                        Quick Submit &rarr;
+                      </Link>
+                    </div>
                   </motion.div>
                 </AnimatedCard>
               );

@@ -126,6 +126,13 @@ export default function Navbar() {
 
                       <div className="py-1">
                         <Link
+                          href="/profile"
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-[#C66810] transition-colors font-medium"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <span>📊</span> My Profile & Progress
+                        </Link>
+                        <Link
                           href="/news/my-articles"
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-[#C66810] transition-colors font-medium"
                           onClick={() => setShowUserMenu(false)}

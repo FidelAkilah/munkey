@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 // Routes that require authentication
-const protectedRoutes = ["/news/add", "/news/my-articles", "/admin/dashboard"];
+const protectedRoutes = ["/news/add", "/news/my-articles", "/admin/dashboard", "/profile"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

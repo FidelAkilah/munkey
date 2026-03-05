@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
-    Submission, AIFeedback, UserProgress,
+    Submission, AIFeedback, UserProgress, ChatMessage,
 )
 
 
@@ -43,3 +43,10 @@ class AIFeedbackAdmin(admin.ModelAdmin):
 class UserProgressAdmin(admin.ModelAdmin):
     list_display = ['user', 'lesson', 'completed', 'completed_at']
     list_filter = ['completed']
+
+
+@admin.register(ChatMessage)
+class ChatMessageAdmin(admin.ModelAdmin):
+    list_display = ['user', 'session_id', 'role', 'created_at']
+    list_filter = ['role']
+    readonly_fields = ['created_at']
