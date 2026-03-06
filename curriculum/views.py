@@ -230,11 +230,29 @@ def mark_lesson_complete(request, lesson_id):
 # ── Dashboard Stats ──────────────────────────────────────────
 
 @api_view(['GET'])
-@permission_classes([permissions.IsAuthenticated])
+@permission_classes([permissions.AllowAny])
 def curriculum_stats(request):
-    """Get user's curriculum dashboard stats — comprehensive progress overview."""
-    user = request.user
+    """Get user's curriculum dashboard stats — comprehensive progress overview.
+    Returns generic stats for unauthenticated users, full stats for authenticated users."""
     total_lessons = Lesson.objects.count()
+
+    # If user is not authenticated, return basic public stats only
+    if not request.user or not request.user.is_authenticated:
+        return Response({
+            "total_lessons": total_lessons,
+            "completed_lessons": 0,
+            "completion_percentage": 0,
+            "total_submissions": 0,
+            "reviewed_submissions": 0,
+            "average_score": 0,
+            "best_score": 0,
+            "lowest_score": 0,
+            "skill_level": "New Delegate",
+            "category_breakdown": [],
+            "recent_scores": [],
+        })
+
+    user = request.user
     completed_lessons = UserProgress.objects.filter(user=user, completed=True).count()
     total_submissions = Submission.objects.filter(user=user).count()
     reviewed_submissions = Submission.objects.filter(user=user, status='REVIEWED').count()

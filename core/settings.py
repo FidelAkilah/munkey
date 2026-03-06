@@ -116,6 +116,19 @@ CORS_ALLOWED_ORIGINS = env.list(
     ]
 )
 CORS_ALLOW_CREDENTIALS = True
+
+# Explicit CORS headers — ensures Authorization header is always allowed
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "authorization",
+    "content-type",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "origin",
+    "cache-control",
+    "pragma",
+]
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 DATABASES = {
