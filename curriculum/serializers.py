@@ -63,7 +63,7 @@ class CurriculumCategoryListSerializer(serializers.ModelSerializer):
 class AIFeedbackSerializer(serializers.ModelSerializer):
     class Meta:
         model = AIFeedback
-        fields = ['id', 'overall_score', 'strengths', 'improvements', 'detailed_feedback', 'suggestions', 'created_at']
+        fields = ['id', 'overall_score', 'rubric_scores', 'strengths', 'improvements', 'detailed_feedback', 'suggestions', 'example_revision', 'created_at']
 
 
 class SubmissionSerializer(serializers.ModelSerializer):

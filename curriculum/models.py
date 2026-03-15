@@ -114,10 +114,12 @@ class AIFeedback(models.Model):
     """AI-generated feedback for submissions."""
     submission = models.OneToOneField(Submission, related_name='feedback', on_delete=models.CASCADE)
     overall_score = models.PositiveIntegerField(default=0, help_text="Score out of 100")
+    rubric_scores = models.JSONField(null=True, blank=True, help_text="Per-criterion rubric breakdown: {criterion: {score, max, comment}}")
     strengths = models.TextField(blank=True)
     improvements = models.TextField(blank=True)
     detailed_feedback = models.TextField(blank=True)
     suggestions = models.TextField(blank=True, help_text="Actionable next steps")
+    example_revision = models.TextField(blank=True, null=True, help_text="AI-rewritten example of the student's weakest section")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

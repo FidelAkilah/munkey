@@ -511,6 +511,40 @@ export default function QuestionDetailPage() {
                       />
                     </div>
 
+                    {/* Rubric Breakdown */}
+                    {feedback.rubric_scores && (
+                      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.45 }} className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-5">
+                        <h3 className="font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          <span className="w-6 h-6 rounded bg-[#C66810]/10 text-[#C66810] flex items-center justify-center text-xs">📊</span>
+                          Rubric Breakdown
+                        </h3>
+                        <div className="space-y-3">
+                          {Object.entries(feedback.rubric_scores).map(([key, val]: [string, any], i: number) => {
+                            const pct = val.max > 0 ? (val.score / val.max) * 100 : 0;
+                            const barColor = pct >= 75 ? "bg-green-500" : pct >= 50 ? "bg-[#C66810]" : "bg-red-400";
+                            const label = key.replace(/_/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
+                            return (
+                              <motion.div key={key} initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.08 }}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-sm font-semibold text-slate-700">{label}</span>
+                                  <span className="text-sm font-bold text-slate-800">{val.score}/{val.max}</span>
+                                </div>
+                                <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden mb-1">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${pct}%` }}
+                                    transition={{ duration: 0.8, delay: 0.6 + i * 0.08 }}
+                                    className={`h-2.5 rounded-full ${barColor}`}
+                                  />
+                                </div>
+                                {val.comment && <p className="text-xs text-slate-500 mt-0.5">{val.comment}</p>}
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      </motion.div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div className="bg-green-50 rounded-xl p-5 border border-green-200">
                         <h3 className="font-bold text-green-700 mb-2">Strengths</h3>
@@ -521,6 +555,19 @@ export default function QuestionDetailPage() {
                         <p className="text-sm text-slate-600 whitespace-pre-line">{feedback.improvements}</p>
                       </div>
                     </div>
+
+                    {/* Example Revision */}
+                    {feedback.example_revision && (
+                      <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.65 }} className="bg-blue-50 rounded-xl p-5 border border-blue-200 mb-4">
+                        <h3 className="font-bold text-blue-700 mb-2 flex items-center gap-2">
+                          <span>✨</span> Here&apos;s How to Improve
+                        </h3>
+                        <p className="text-xs text-blue-600 mb-3">Bongo rewrote your weakest section to show you what a stronger version looks like:</p>
+                        <div className="bg-white rounded-lg p-4 border border-blue-200 text-sm text-slate-700 whitespace-pre-line font-mono leading-relaxed">
+                          {feedback.example_revision}
+                        </div>
+                      </motion.div>
+                    )}
 
                     <div className="bg-slate-50 rounded-xl p-5 border border-slate-200 mb-4">
                       <h3 className="font-bold text-slate-800 mb-2">Detailed Analysis</h3>

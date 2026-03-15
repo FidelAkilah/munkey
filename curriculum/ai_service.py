@@ -111,7 +111,7 @@ def get_client():
 
 
 def review_draft_resolution(text_content: str, question_prompt: str = "") -> dict:
-    """Review a draft resolution submission."""
+    """Review a draft resolution submission against a detailed rubric."""
     client = get_client()
 
     user_prompt = f"""Please review this MUN draft resolution submission.
@@ -122,21 +122,29 @@ def review_draft_resolution(text_content: str, question_prompt: str = "") -> dic
 {text_content}
 === END ===
 
-Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100 (be fair but encouraging — a solid beginner draft might be 50-65, a good intermediate draft 65-80, an excellent advanced draft 80-95)
-- "strengths": string with bullet points of what's done well (be specific — quote exact phrases)
-- "improvements": string with bullet points of what needs improvement (give examples of how to fix each issue)
-- "detailed_feedback": string with paragraph-form detailed analysis covering structure, content, formatting, and strategy
-- "suggestions": string with numbered actionable next steps the delegate can take immediately
+Score this submission against EACH of these rubric criteria:
+1. UN Format Compliance (0-20): Correct preambulatory/operative clause structure? Proper formatting (italicized PP verbs, numbering, sponsor/signatory block)?
+2. Clause Quality (0-25): Are operative clauses specific, actionable, and measurable? Do PP clauses cite real precedents?
+3. Legal Language (0-15): Proper UN terminology used correctly ("Requests", "Urges", "Decides", "Reaffirming", "Noting with concern")? Diplomatic register maintained?
+4. Feasibility (0-20): Are proposals realistic, implementable, and fundable? Do they respect state sovereignty?
+5. Comprehensiveness (0-20): Does it address root causes, multiple dimensions, and affected stakeholders?
 
-Focus on: preambulatory clause structure (PP), operative clause structure (OP), UN formatting conventions, policy feasibility, language precision, diplomatic tone, and whether the resolution addresses the actual issue comprehensively.
+Return your review as JSON with these exact keys:
+- "overall_score": integer 0-100 (sum of rubric scores; a solid beginner draft might be 40-55, intermediate 55-75, excellent advanced 80-95)
+- "rubric_scores": object where each key is the criterion name and value is {{"score": integer, "max": integer, "comment": "1-2 sentence explanation"}}. Use these exact keys: "un_format_compliance", "clause_quality", "legal_language", "feasibility", "comprehensiveness"
+- "strengths": array of 3-5 specific strength bullet points (quote exact phrases from the submission)
+- "improvements": array of 3-5 specific improvement bullet points (include concrete examples of how to fix each)
+- "detailed_feedback": string with paragraph-form detailed analysis covering structure, content, formatting, and strategy
+- "suggestions": array of 3-5 numbered actionable next steps
+- "example_revision": string showing a rewritten version of the student's WEAKEST section, demonstrating how to improve it. Pick the lowest-scoring rubric area and rewrite their actual text to show what a stronger version looks like.
+
 If the student is clearly a beginner, be encouraging and focus on 2-3 key improvements rather than overwhelming them."""
 
     return _call_openai(client, user_prompt)
 
 
 def review_speech(text_content: str = "", video_url: str = "", question_prompt: str = "") -> dict:
-    """Review a speech submission (text transcript or general feedback on description)."""
+    """Review a speech submission against a detailed rubric."""
     client = get_client()
 
     content_desc = text_content if text_content else f"Speech video submitted at: {video_url}"
@@ -149,21 +157,30 @@ def review_speech(text_content: str = "", video_url: str = "", question_prompt: 
 {content_desc}
 === END ===
 
-Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100 (be fair — a decent first speech might score 45-60, a strong intermediate speech 65-80, an award-winning speech 85-100)
-- "strengths": string with bullet points of what's done well (quote specific phrases or structural elements)
-- "improvements": string with bullet points of what needs improvement (provide concrete examples and rewrites where helpful)
-- "detailed_feedback": string with paragraph-form detailed analysis
-- "suggestions": string with numbered actionable next steps
+Score this submission against EACH of these rubric criteria:
+1. Hook/Opening (0-15): Does it grab attention? Is it relevant to the topic? Does it set the tone?
+2. Country Position Clarity (0-20): Is the national policy clearly stated? Does the delegate speak authentically from their country's perspective?
+3. Evidence & Examples (0-20): Are there specific facts, statistics, treaties, or precedents cited? Are sources credible?
+4. Structure & Flow (0-15): Logical progression from problem → position → solution? Smooth transitions?
+5. Call to Action (0-15): Clear, actionable proposals for the committee? Does it inspire collaboration?
+6. Delivery Notes (0-15): Language appropriate for diplomatic setting? Persuasive tone without aggression? Rhetorical devices used effectively?
 
-Focus on: opening hook effectiveness, argument structure and flow, rhetorical devices (anaphora, tricolon, etc.), diplomatic language vs. aggressive tone, use of evidence and statistics, emotional appeal balance, closing impact and call to action.
-Assess whether the speech would be effective in a real MUN committee and suggest committee-specific strategies."""
+Return your review as JSON with these exact keys:
+- "overall_score": integer 0-100 (sum of rubric scores; a decent first speech might score 40-55, strong intermediate 60-75, award-winning 85-100)
+- "rubric_scores": object where each key is the criterion name and value is {{"score": integer, "max": integer, "comment": "1-2 sentence explanation"}}. Use these exact keys: "hook_opening", "country_position_clarity", "evidence_examples", "structure_flow", "call_to_action", "delivery_notes"
+- "strengths": array of 3-5 specific strength bullet points (quote exact phrases from the speech)
+- "improvements": array of 3-5 specific improvement bullet points (include concrete rewrites where helpful)
+- "detailed_feedback": string with paragraph-form detailed analysis
+- "suggestions": array of 3-5 numbered actionable next steps
+- "example_revision": string showing a rewritten version of the student's WEAKEST section. Pick the lowest-scoring rubric area and rewrite their actual text to show what a stronger version looks like. If the hook scored lowest, rewrite their opening. If evidence scored lowest, show how to weave in specific data.
+
+Assess whether the speech would be effective in a real MUN committee."""
 
     return _call_openai(client, user_prompt)
 
 
 def review_negotiation(text_content: str, question_prompt: str = "") -> dict:
-    """Review a negotiation scenario response."""
+    """Review a negotiation scenario response against a detailed rubric."""
     client = get_client()
 
     user_prompt = f"""Please review this MUN negotiation/diplomacy exercise response.
@@ -174,21 +191,29 @@ def review_negotiation(text_content: str, question_prompt: str = "") -> dict:
 {text_content}
 === END ===
 
-Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100
-- "strengths": string with bullet points of what's done well (be specific about diplomatic strategy)
-- "improvements": string with bullet points of what needs improvement (suggest alternative approaches)
-- "detailed_feedback": string with paragraph-form detailed analysis
-- "suggestions": string with numbered actionable next steps
+Score this submission against EACH of these rubric criteria:
+1. Strategy Clarity (0-20): Is the negotiation approach well-defined? Are goals and red lines clear?
+2. Stakeholder Awareness (0-20): Understanding of other parties' positions, interests, and constraints?
+3. Compromise Proposals (0-25): Creative, mutually beneficial solutions? Are trade-offs realistic?
+4. Communication Tactics (0-20): Diplomatic language, persuasion techniques, framing? Avoids alienating potential allies?
+5. Adaptability (0-15): Contingency plans if initial approach fails? Flexibility without abandoning core interests?
 
-Focus on: strategic thinking and long-term planning, coalition/bloc awareness and building, compromise proposals and their feasibility, diplomatic language and tact, realistic policy approaches that align with country positions, understanding of power dynamics within the committee.
+Return your review as JSON with these exact keys:
+- "overall_score": integer 0-100 (sum of rubric scores)
+- "rubric_scores": object where each key is the criterion name and value is {{"score": integer, "max": integer, "comment": "1-2 sentence explanation"}}. Use these exact keys: "strategy_clarity", "stakeholder_awareness", "compromise_proposals", "communication_tactics", "adaptability"
+- "strengths": array of 3-5 specific strength bullet points (reference specific diplomatic strategies used)
+- "improvements": array of 3-5 specific improvement bullet points (suggest alternative approaches)
+- "detailed_feedback": string with paragraph-form detailed analysis
+- "suggestions": array of 3-5 numbered actionable next steps
+- "example_revision": string showing a rewritten version of the student's WEAKEST section. Pick the lowest-scoring rubric area and rewrite their actual text to demonstrate a stronger approach. For example, if compromise proposals scored lowest, show what a more creative compromise would look like.
+
 Consider whether the approach would realistically achieve the delegate's goals in a committee setting."""
 
     return _call_openai(client, user_prompt)
 
 
 def review_general(text_content: str, question_prompt: str = "") -> dict:
-    """General review for any MUN-related submission."""
+    """General review for any MUN-related submission with rubric feedback."""
     client = get_client()
 
     user_prompt = f"""Please review this MUN practice submission.
@@ -199,12 +224,20 @@ def review_general(text_content: str, question_prompt: str = "") -> dict:
 {text_content}
 === END ===
 
-Provide your review as JSON with these exact keys:
-- "overall_score": integer 0-100
-- "strengths": string with bullet points of what's done well
-- "improvements": string with bullet points of what needs improvement
+Score this submission against these general rubric criteria:
+1. Content Quality (0-25): Depth of analysis, accuracy of information, relevance to the topic?
+2. MUN Knowledge (0-25): Understanding of MUN procedures, conventions, and best practices?
+3. Critical Thinking (0-25): Original analysis, logical reasoning, consideration of multiple perspectives?
+4. Communication (0-25): Clarity of writing, organization, appropriate tone and register?
+
+Return your review as JSON with these exact keys:
+- "overall_score": integer 0-100 (sum of rubric scores)
+- "rubric_scores": object where each key is the criterion name and value is {{"score": integer, "max": integer, "comment": "1-2 sentence explanation"}}. Use these exact keys: "content_quality", "mun_knowledge", "critical_thinking", "communication"
+- "strengths": array of 3-5 specific strength bullet points
+- "improvements": array of 3-5 specific improvement bullet points
 - "detailed_feedback": string with paragraph-form detailed analysis
-- "suggestions": string with numbered actionable next steps"""
+- "suggestions": array of 3-5 numbered actionable next steps
+- "example_revision": string showing a rewritten version of the student's WEAKEST section, demonstrating how to improve it"""
 
     return _call_openai(client, user_prompt)
 
@@ -281,8 +314,15 @@ Remember: stay within the {category_type} category ONLY."""
         return []
 
 
+def _format_list_field(value) -> str:
+    """Convert a list or string field into a bullet-point string for storage."""
+    if isinstance(value, list):
+        return "\n".join(f"• {item}" for item in value)
+    return str(value) if value else ""
+
+
 def _call_openai(client, user_prompt: str) -> dict:
-    """Internal helper to call OpenAI and parse response."""
+    """Internal helper to call OpenAI and parse rubric-based response."""
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -292,7 +332,7 @@ def _call_openai(client, user_prompt: str) -> dict:
             ],
             response_format={"type": "json_object"},
             temperature=0.6,
-            max_tokens=2000,
+            max_tokens=3000,
         )
 
         content = response.choices[0].message.content
@@ -300,20 +340,24 @@ def _call_openai(client, user_prompt: str) -> dict:
 
         return {
             "overall_score": int(parsed.get("overall_score", 0)),
-            "strengths": parsed.get("strengths", ""),
-            "improvements": parsed.get("improvements", ""),
+            "rubric_scores": parsed.get("rubric_scores", None),
+            "strengths": _format_list_field(parsed.get("strengths", "")),
+            "improvements": _format_list_field(parsed.get("improvements", "")),
             "detailed_feedback": parsed.get("detailed_feedback", ""),
-            "suggestions": parsed.get("suggestions", ""),
+            "suggestions": _format_list_field(parsed.get("suggestions", "")),
+            "example_revision": parsed.get("example_revision", ""),
         }
 
     except Exception as e:
         logger.error(f"DiplomAI review error: {e}")
         return {
             "overall_score": 0,
+            "rubric_scores": None,
             "strengths": "",
             "improvements": "",
             "detailed_feedback": f"DiplomAI encountered an error processing your submission. Please try again. (Error: {str(e)})",
             "suggestions": "Try resubmitting, or contact support if the issue persists.",
+            "example_revision": "",
         }
 
 

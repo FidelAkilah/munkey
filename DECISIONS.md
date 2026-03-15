@@ -68,6 +68,23 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-15 — AI Feedback Rubric Upgrade
+
+**Decision:** Overhauled the DiplomAI feedback system with MUN-specific rubrics for each submission type, an `example_revision` field, and a visual rubric breakdown on the frontend.
+**What changed:**
+- `ai_service.py`: Each review function (`review_speech`, `review_draft_resolution`, `review_negotiation`, `review_general`) now includes a detailed scoring rubric in its prompt. The AI returns per-criterion scores (e.g., Hook/Opening 0-15, Country Position Clarity 0-20, etc.) and a rewritten example of the student's weakest section.
+- `AIFeedback` model: Added `rubric_scores` (JSONField, nullable) and `example_revision` (TextField, nullable) — existing records are unaffected.
+- `_call_openai()`: Now parses `rubric_scores`, `example_revision`, and converts array-format strengths/improvements/suggestions to bullet-point strings via `_format_list_field()`. Max tokens increased to 3000.
+- Serializers & views updated to pass through new fields.
+- Frontend (`submit/page.tsx`, `question/[id]/page.tsx`): Added colored progress bars for each rubric criterion and a "Here's How to Improve" example revision box.
+**Why:** Generic feedback wasn't actionable enough. Rubric-based scoring tells students exactly where they're strong/weak, and the example revision is the #1 learning tool for MUN delegates.
+**Rule:**
+- AI feedback JSON must always include `rubric_scores` (object of `{criterion: {score, max, comment}}`) and `example_revision` (string). The `_call_openai` helper handles both gracefully if the AI omits them.
+- When adding a new submission category, define its rubric criteria in the review function prompt and use matching snake_case keys in `rubric_scores`.
+- Migration `0004_aifeedback_example_revision_aifeedback_rubric_scores` — both fields are nullable so existing data is safe.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 

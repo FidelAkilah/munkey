@@ -16,12 +16,18 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
   ```json
   {
     "overall_score": 0-100,
-    "strengths": "bullet points",
-    "improvements": "bullet points with examples",
+    "rubric_scores": {
+      "criterion_name": {"score": 0, "max": N, "comment": "explanation"}
+    },
+    "strengths": ["bullet points"],
+    "improvements": ["bullet points with examples"],
     "detailed_feedback": "paragraph analysis",
-    "suggestions": "numbered actionable steps"
+    "suggestions": ["numbered actionable steps"],
+    "example_revision": "rewritten version of the student's weakest section"
   }
   ```
+- Each review function has its own rubric criteria (speech: 6 criteria, draft: 5, negotiation: 5, general: 4)
+- `_format_list_field()` converts array responses to bullet-point strings for DB storage
 - Practice questions must include: title, prompt, hints, sample_answers
 - Chat sessions use a `session_id` for conversation persistence
 

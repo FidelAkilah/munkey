@@ -188,10 +188,12 @@ class SubmissionCreateView(generics.CreateAPIView):
             AIFeedback.objects.create(
                 submission=submission,
                 overall_score=result.get('overall_score', 0),
+                rubric_scores=result.get('rubric_scores'),
                 strengths=result.get('strengths', ''),
                 improvements=result.get('improvements', ''),
                 detailed_feedback=result.get('detailed_feedback', ''),
                 suggestions=result.get('suggestions', ''),
+                example_revision=result.get('example_revision', ''),
             )
             submission.status = 'REVIEWED'
             submission.save()
