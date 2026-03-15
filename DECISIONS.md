@@ -49,6 +49,14 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-15 — Curriculum Page Client-Side Crash Fix
+
+**Issue:** The `/curriculum/practice` page threw a client-side exception ("Application error") because the `PracticeQuestionListView` returns paginated JSON (`{count, next, results: [...]}`) but the frontend did `setQuestions(await res.json())` expecting a plain array. Calling `.map()` on the paginated object crashed React.
+**Fix:** Updated `practice/page.tsx` and `curriculum/page.tsx` to handle both paginated and plain array responses: `Array.isArray(data) ? data : data.results || []`. Also added optional chaining on `dailyQuestion.question.prompt?.slice()`.
+**Rule:** When consuming DRF list endpoints, always check if the response is paginated (`data.results`) or a plain array. Any view with a `pagination_class` returns `{count, next, previous, results}`, not a bare array.
+
+---
+
 ## Deployment Notes
 
 **Issue:** University WiFi may block Supabase database connections.

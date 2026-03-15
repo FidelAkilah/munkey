@@ -58,11 +58,12 @@ export default function CurriculumPage() {
         ]);
         if (catRes.ok) {
           const data = await catRes.json();
-          if (data && data.length > 0) setCategories(data);
+          const catArray = Array.isArray(data) ? data : data.results || [];
+          if (catArray.length > 0) setCategories(catArray);
         }
         if (qotdRes.ok) {
           const qotd = await qotdRes.json();
-          setDailyQuestion(qotd);
+          if (qotd && qotd.question) setDailyQuestion(qotd);
         }
       } catch (err) {
         console.error("Failed to fetch curriculum:", err);
@@ -168,7 +169,7 @@ export default function CurriculumPage() {
                     {dailyQuestion.question.title}
                   </h3>
                   <p className="text-slate-400 text-sm line-clamp-2">
-                    {dailyQuestion.question.prompt.slice(0, 150)}...
+                    {dailyQuestion.question.prompt?.slice(0, 150)}...
                   </p>
                 </div>
                 <div className="flex-shrink-0 flex items-center gap-2 text-sm font-bold text-[#C66810] group-hover:translate-x-1 transition-transform">

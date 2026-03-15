@@ -52,7 +52,7 @@ function PracticeContent() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    fetch(`${API_BASE}/api/curriculum/categories/`).then((r) => r.json()).then(setCategories).catch(() => {});
+    fetch(`${API_BASE}/api/curriculum/categories/`).then((r) => r.json()).then((data) => setCategories(Array.isArray(data) ? data : data.results || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -63,7 +63,10 @@ function PracticeContent() {
         if (selectedCategory) params.append("category", selectedCategory);
         if (selectedDifficulty) params.append("difficulty", selectedDifficulty);
         const res = await fetch(`${API_BASE}/api/curriculum/questions/?${params}`);
-        if (res.ok) setQuestions(await res.json());
+        if (res.ok) {
+          const data = await res.json();
+          setQuestions(Array.isArray(data) ? data : data.results || []);
+        }
       } catch (err) { console.error("Failed to fetch questions", err); }
       finally { setLoading(false); }
     }
