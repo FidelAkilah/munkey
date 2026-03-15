@@ -17,7 +17,11 @@ class PracticeQuestionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PracticeQuestion
-        fields = ['id', 'category', 'title', 'prompt', 'question_type', 'difficulty', 'hints', 'category_name', 'category_type', 'created_at']
+        fields = [
+            'id', 'category', 'title', 'prompt', 'question_type', 'difficulty',
+            'hints', 'key_concepts', 'is_seeded', 'quality_score',
+            'category_name', 'category_type', 'created_at',
+        ]
 
 
 class CurriculumCategorySerializer(serializers.ModelSerializer):

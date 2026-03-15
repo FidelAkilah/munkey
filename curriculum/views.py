@@ -1,6 +1,10 @@
+import hashlib
+from datetime import date
+
 from django.utils import timezone
 from rest_framework import generics, status, permissions
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 
 from .models import (
@@ -15,6 +19,12 @@ from .serializers import (
     GenerateQuestionsSerializer, ChatMessageSerializer, ChatSendSerializer,
 )
 from . import ai_service
+
+
+class QuestionPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 50
 
 
 # ── Category Views ──────────────────────────────────────────
@@ -62,21 +72,45 @@ class LessonDetailView(generics.RetrieveAPIView):
 # ── Practice Question Views ─────────────────────────────────
 
 class PracticeQuestionListView(generics.ListAPIView):
-    """List practice questions, optionally filtered."""
+    """List practice questions, optionally filtered.
+
+    Query params:
+        category  – filter by category slug
+        type      – filter by question_type (SPEECH, DRAFT, etc.)
+        difficulty – beginner|intermediate|advanced (or BEG|INT|ADV)
+        source    – seeded|ai|all (default: all)
+    """
     serializer_class = PracticeQuestionSerializer
     permission_classes = [permissions.AllowAny]
+    pagination_class = QuestionPagination
+
+    DIFFICULTY_MAP = {
+        'beginner': 'BEG', 'intermediate': 'INT', 'advanced': 'ADV',
+        'beg': 'BEG', 'int': 'INT', 'adv': 'ADV',
+    }
 
     def get_queryset(self):
-        qs = PracticeQuestion.objects.all()
+        qs = PracticeQuestion.objects.select_related('category').all()
+
         category_slug = self.request.query_params.get('category')
         if category_slug:
             qs = qs.filter(category__slug=category_slug)
+
         question_type = self.request.query_params.get('type')
         if question_type:
-            qs = qs.filter(question_type=question_type)
+            qs = qs.filter(question_type=question_type.upper())
+
         difficulty = self.request.query_params.get('difficulty')
         if difficulty:
-            qs = qs.filter(difficulty=difficulty)
+            mapped = self.DIFFICULTY_MAP.get(difficulty.lower(), difficulty.upper())
+            qs = qs.filter(difficulty=mapped)
+
+        source = self.request.query_params.get('source', 'all').lower()
+        if source == 'seeded':
+            qs = qs.filter(is_seeded=True)
+        elif source == 'ai':
+            qs = qs.filter(is_seeded=False)
+
         return qs
 
 
@@ -183,17 +217,73 @@ class SubmissionDetailView(generics.RetrieveAPIView):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def generate_questions(request):
-    """Generate practice questions on the fly using DiplomAI."""
+    """Generate practice questions using DiplomAI and save them to the database.
+
+    If there are already 50+ AI-generated questions for the requested
+    category+difficulty combo, returns existing ones instead of calling OpenAI.
+    """
     serializer = GenerateQuestionsSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    questions = ai_service.generate_practice_questions(
-        category_type=serializer.validated_data['category_type'],
-        difficulty=serializer.validated_data.get('difficulty', 'INT'),
-        count=serializer.validated_data.get('count', 3),
+    category_type = serializer.validated_data['category_type']
+    difficulty = serializer.validated_data.get('difficulty', 'INT')
+    count = serializer.validated_data.get('count', 3)
+
+    # Check cap: if 50+ AI-generated questions exist, return existing ones
+    existing_ai = PracticeQuestion.objects.filter(
+        category__category_type=category_type,
+        difficulty=difficulty,
+        is_seeded=False,
+    )
+    if existing_ai.count() >= 50:
+        sample = existing_ai.order_by('?')[:count]
+        return Response({
+            "questions": PracticeQuestionSerializer(sample, many=True).data,
+            "source": "existing",
+        }, status=status.HTTP_200_OK)
+
+    # Generate new questions via AI
+    raw_questions = ai_service.generate_practice_questions(
+        category_type=category_type,
+        difficulty=difficulty,
+        count=count,
     )
 
-    return Response({"questions": questions}, status=status.HTTP_200_OK)
+    # Save generated questions to DB
+    try:
+        category = CurriculumCategory.objects.get(category_type=category_type)
+    except CurriculumCategory.DoesNotExist:
+        return Response({"questions": raw_questions, "source": "ai"}, status=status.HTTP_200_OK)
+
+    CATEGORY_QUESTION_TYPE = {
+        "SPEECH": "SPEECH", "DRAFT": "DRAFT", "NEGOTIATION": "NEGOTIATION",
+        "RESEARCH": "OPEN", "PROCEDURE": "QUIZ", "GENERAL": "OPEN",
+    }
+
+    saved = []
+    for q in raw_questions:
+        title = q.get('title', '')[:255]
+        if not title:
+            continue
+        obj, created = PracticeQuestion.objects.get_or_create(
+            title=title,
+            category=category,
+            defaults={
+                "question_type": CATEGORY_QUESTION_TYPE.get(category_type, "OPEN"),
+                "prompt": q.get('prompt', ''),
+                "sample_answer": q.get('sample_approach', q.get('sample_answer', '')),
+                "difficulty": difficulty,
+                "hints": q.get('hints', ''),
+                "key_concepts": q.get('key_concepts', ''),
+                "is_seeded": False,
+            },
+        )
+        saved.append(obj)
+
+    return Response({
+        "questions": PracticeQuestionSerializer(saved, many=True).data,
+        "source": "ai",
+    }, status=status.HTTP_200_OK)
 
 
 # ── User Progress Views ─────────────────────────────────────
@@ -396,3 +486,42 @@ def chat_history(request):
     ).order_by('created_at')
 
     return Response(ChatMessageSerializer(messages, many=True).data)
+
+
+# ── Question of the Day ─────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def question_of_the_day(request):
+    """Return a daily rotating question from the seeded question bank.
+
+    Uses the current date as a seed to deterministically pick a question
+    that changes every day. Prefers seeded questions but falls back to any.
+    """
+    seeded_ids = list(
+        PracticeQuestion.objects.filter(is_seeded=True)
+        .order_by('id')
+        .values_list('id', flat=True)
+    )
+
+    if not seeded_ids:
+        # Fallback to any question
+        seeded_ids = list(
+            PracticeQuestion.objects.order_by('id')
+            .values_list('id', flat=True)
+        )
+
+    if not seeded_ids:
+        return Response({"error": "No questions available yet."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Deterministic daily rotation
+    today = date.today().isoformat()
+    day_hash = int(hashlib.md5(today.encode()).hexdigest(), 16)
+    index = day_hash % len(seeded_ids)
+    question_id = seeded_ids[index]
+
+    question = PracticeQuestion.objects.select_related('category').get(id=question_id)
+    return Response({
+        "date": today,
+        "question": PracticeQuestionSerializer(question).data,
+    })

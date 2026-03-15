@@ -35,6 +35,20 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-15 — Practice Question Bank Redesign
+
+**Decision:** Replaced on-the-fly AI question generation with a seeded question bank (180+ curated questions in DB). Added `is_seeded`, `quality_score`, and `key_concepts` fields to `PracticeQuestion`. Created `seed_questions` management command. AI generation kept as supplement (capped at 50 per category+difficulty combo) and now saves to DB.
+**Why:** On-the-fly generation via OpenAI was expensive, slow, and produced inconsistent quality. A curated bank gives instant, reliable questions while AI supplements the library.
+**Rule:**
+- Run `python manage.py seed_questions` after fresh deploys or DB resets to populate the question bank.
+- Use `--flush` flag to replace all seeded questions: `python manage.py seed_questions --flush`.
+- The question listing API now returns seeded questions first (ordered by `-is_seeded, -created_at`).
+- New query params on `/api/curriculum/questions/`: `source=seeded|ai|all`, `difficulty=beginner|intermediate|advanced`, pagination (20/page).
+- New endpoint: `GET /api/curriculum/question-of-the-day/` — rotates daily from seeded questions.
+- Frontend: Daily Challenge card on `/curriculum` page fetches question-of-the-day.
+
+---
+
 ## Deployment Notes
 
 **Issue:** University WiFi may block Supabase database connections.

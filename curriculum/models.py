@@ -69,10 +69,13 @@ class PracticeQuestion(models.Model):
     sample_answer = models.TextField(blank=True, help_text="Optional sample/ideal answer for AI reference")
     difficulty = models.CharField(max_length=3, choices=Lesson.DIFFICULTY_CHOICES, default='BEG')
     hints = models.TextField(blank=True, help_text="Optional hints for the student")
+    key_concepts = models.TextField(blank=True, help_text="Comma-separated key MUN concepts this question tests")
+    is_seeded = models.BooleanField(default=False, help_text="True for hand-curated/pre-seeded questions")
+    quality_score = models.FloatField(null=True, blank=True, help_text="Quality rating 0-5 for future curation")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ['-is_seeded', '-created_at']
 
     def __str__(self):
         return self.title

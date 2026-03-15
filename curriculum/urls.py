@@ -22,6 +22,9 @@ urlpatterns = [
     # AI Generate
     path('generate-questions/', views.generate_questions, name='curriculum-generate-questions'),
 
+    # Question of the Day
+    path('question-of-the-day/', views.question_of_the_day, name='curriculum-qotd'),
+
     # DiplomAI Chat
     path('chat/', views.chat_send, name='curriculum-chat'),
     path('chat/history/', views.chat_history, name='curriculum-chat-history'),

@@ -44,18 +44,25 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
 
 export default function CurriculumPage() {
   const [categories, setCategories] = useState<any[]>([]);
+  const [dailyQuestion, setDailyQuestion] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const isAuthenticated = !!session?.user;
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const res = await fetch(`${API_BASE}/api/curriculum/categories/`);
-        if (res.ok) {
-          const data = await res.json();
+        const [catRes, qotdRes] = await Promise.all([
+          fetch(`${API_BASE}/api/curriculum/categories/`),
+          fetch(`${API_BASE}/api/curriculum/question-of-the-day/`),
+        ]);
+        if (catRes.ok) {
+          const data = await catRes.json();
           if (data && data.length > 0) setCategories(data);
+        }
+        if (qotdRes.ok) {
+          const qotd = await qotdRes.json();
+          setDailyQuestion(qotd);
         }
       } catch (err) {
         console.error("Failed to fetch curriculum:", err);
@@ -138,6 +145,40 @@ export default function CurriculumPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Daily Challenge */}
+      {dailyQuestion?.question && (
+        <section className="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-0">
+          <AnimatedSection>
+            <Link
+              href={`/curriculum/question/${dailyQuestion.question.id}`}
+              className="group block relative overflow-hidden rounded-2xl border border-[#C66810]/20 bg-gradient-to-r from-[#0a1628] to-[#1a2744] p-8 md:p-10 shadow-lg hover:shadow-xl hover:border-[#C66810]/40 transition-all duration-300"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#C66810]/10 rounded-full blur-3xl -mr-20 -mt-20" />
+              <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
+                <div className="flex-shrink-0 w-16 h-16 rounded-2xl bg-[#C66810]/20 flex items-center justify-center text-3xl">
+                  🔥
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-3 mb-2">
+                    <span className="text-[11px] font-black uppercase tracking-[0.2em] text-[#E8913A]">Daily Challenge</span>
+                    <span className="text-xs text-slate-500">{dailyQuestion.date}</span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-1 group-hover:text-[#E8913A] transition-colors truncate">
+                    {dailyQuestion.question.title}
+                  </h3>
+                  <p className="text-slate-400 text-sm line-clamp-2">
+                    {dailyQuestion.question.prompt.slice(0, 150)}...
+                  </p>
+                </div>
+                <div className="flex-shrink-0 flex items-center gap-2 text-sm font-bold text-[#C66810] group-hover:translate-x-1 transition-transform">
+                  Take Challenge <span>&rarr;</span>
+                </div>
+              </div>
+            </Link>
+          </AnimatedSection>
+        </section>
+      )}
 
       {/* Categories / Modules Grid */}
       <section id="modules" className="max-w-7xl mx-auto px-6 lg:px-8 py-24">
