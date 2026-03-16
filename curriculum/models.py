@@ -188,6 +188,46 @@ class ChatMessage(models.Model):
         return f"[{self.role}] {self.content[:60]}..."
 
 
+class APIUsageLog(models.Model):
+    """Tracks OpenAI API calls for cost protection and monitoring."""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name='api_usage_logs',
+        on_delete=models.CASCADE,
+        null=True, blank=True,
+    )
+    endpoint = models.CharField(max_length=100, help_text="Which endpoint triggered this call")
+    estimated_tokens = models.PositiveIntegerField(default=0, help_text="Estimated total tokens used")
+    model_name = models.CharField(max_length=50, default='gpt-4o-mini')
+    timestamp = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = 'API Usage Log'
+
+    def __str__(self):
+        return f"{self.endpoint} — {self.estimated_tokens} tokens ({self.timestamp.strftime('%Y-%m-%d %H:%M')})"
+
+    @classmethod
+    def tokens_used_today(cls):
+        """Return total estimated tokens used today."""
+        from django.utils import timezone
+        today_start = timezone.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        return cls.objects.filter(
+            timestamp__gte=today_start
+        ).aggregate(
+            total=models.Sum('estimated_tokens')
+        )['total'] or 0
+
+    @classmethod
+    def check_daily_limit(cls):
+        """Check if daily token limit has been exceeded. Returns (ok, tokens_used)."""
+        from django.conf import settings
+        limit = getattr(settings, 'DAILY_TOKEN_LIMIT', 500000)
+        used = cls.tokens_used_today()
+        return used < limit, used
+
+
 class MUNTip(models.Model):
     """Curated MUN tips displayed as daily rotating tips."""
     CATEGORY_CHOICES = CurriculumCategory.CATEGORY_CHOICES

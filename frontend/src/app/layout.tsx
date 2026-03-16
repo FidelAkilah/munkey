@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import { AuthProvider } from "../components/providers";
+import { RateLimitToastProvider } from "../components/RateLimitToast";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,9 +13,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} antialiased`}
       >
         <AuthProvider>
-          <Navbar />
-          {children}
-          <Footer />
+          <RateLimitToastProvider>
+            <Navbar />
+            {children}
+            <Footer />
+          </RateLimitToastProvider>
         </AuthProvider>
       </body>
     </html>

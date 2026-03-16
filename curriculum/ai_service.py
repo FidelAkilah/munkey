@@ -6,6 +6,7 @@ import json
 import logging
 import io
 from django.conf import settings
+from rest_framework.exceptions import Throttled
 
 try:
     from pypdf import PdfReader
@@ -100,6 +101,34 @@ def extract_text_from_file(file_field) -> str:
             pass
 
 
+def check_daily_token_limit():
+    """Check if we've exceeded the daily OpenAI token limit.
+
+    Raises Throttled if the limit is exceeded so DRF returns a proper 429.
+    """
+    from .models import APIUsageLog
+    ok, used = APIUsageLog.check_daily_limit()
+    if not ok:
+        raise Throttled(
+            wait=None,
+            detail="Our AI tutor is resting for today. Please try again tomorrow!",
+        )
+
+
+def log_api_usage(user, endpoint, estimated_tokens, model_name='gpt-4o-mini'):
+    """Log an OpenAI API call for cost tracking."""
+    from .models import APIUsageLog
+    try:
+        APIUsageLog.objects.create(
+            user=user,
+            endpoint=endpoint,
+            estimated_tokens=estimated_tokens,
+            model_name=model_name,
+        )
+    except Exception as e:
+        logger.error(f"Failed to log API usage: {e}")
+
+
 def get_client():
     """Get OpenAI client with API key from settings."""
     api_key = getattr(settings, 'OPENAI_API_KEY', None)
@@ -110,7 +139,7 @@ def get_client():
     return OpenAI(api_key=api_key)
 
 
-def review_draft_resolution(text_content: str, question_prompt: str = "") -> dict:
+def review_draft_resolution(text_content: str, question_prompt: str = "", user=None) -> dict:
     """Review a draft resolution submission against a detailed rubric."""
     client = get_client()
 
@@ -140,10 +169,10 @@ Return your review as JSON with these exact keys:
 
 If the student is clearly a beginner, be encouraging and focus on 2-3 key improvements rather than overwhelming them."""
 
-    return _call_openai(client, user_prompt)
+    return _call_openai(client, user_prompt, user=user, endpoint="review_draft")
 
 
-def review_speech(text_content: str = "", video_url: str = "", question_prompt: str = "") -> dict:
+def review_speech(text_content: str = "", video_url: str = "", question_prompt: str = "", user=None) -> dict:
     """Review a speech submission against a detailed rubric."""
     client = get_client()
 
@@ -176,10 +205,10 @@ Return your review as JSON with these exact keys:
 
 Assess whether the speech would be effective in a real MUN committee."""
 
-    return _call_openai(client, user_prompt)
+    return _call_openai(client, user_prompt, user=user, endpoint="review_speech")
 
 
-def review_negotiation(text_content: str, question_prompt: str = "") -> dict:
+def review_negotiation(text_content: str, question_prompt: str = "", user=None) -> dict:
     """Review a negotiation scenario response against a detailed rubric."""
     client = get_client()
 
@@ -209,10 +238,10 @@ Return your review as JSON with these exact keys:
 
 Consider whether the approach would realistically achieve the delegate's goals in a committee setting."""
 
-    return _call_openai(client, user_prompt)
+    return _call_openai(client, user_prompt, user=user, endpoint="review_negotiation")
 
 
-def review_general(text_content: str, question_prompt: str = "") -> dict:
+def review_general(text_content: str, question_prompt: str = "", user=None) -> dict:
     """General review for any MUN-related submission with rubric feedback."""
     client = get_client()
 
@@ -239,11 +268,12 @@ Return your review as JSON with these exact keys:
 - "suggestions": array of 3-5 numbered actionable next steps
 - "example_revision": string showing a rewritten version of the student's WEAKEST section, demonstrating how to improve it"""
 
-    return _call_openai(client, user_prompt)
+    return _call_openai(client, user_prompt, user=user, endpoint="review_general")
 
 
-def generate_practice_questions(category_type: str, difficulty: str = "INT", count: int = 3) -> list:
+def generate_practice_questions(category_type: str, difficulty: str = "INT", count: int = 3, user=None) -> list:
     """Generate practice questions dynamically using AI."""
+    check_daily_token_limit()
     client = get_client()
 
     difficulty_desc = {
@@ -303,12 +333,20 @@ Remember: stay within the {category_type} category ONLY."""
             temperature=0.8,
             max_tokens=2000,
         )
+
+        # Log token usage
+        usage = response.usage
+        total_tokens = usage.total_tokens if usage else 2000
+        log_api_usage(user, "generate_questions", total_tokens, 'gpt-4o-mini')
+
         content = response.choices[0].message.content
         parsed = json.loads(content)
         # Handle both {"questions": [...]} and direct array
         if isinstance(parsed, list):
             return parsed
         return parsed.get("questions", parsed.get("exercises", []))
+    except Throttled:
+        raise
     except Exception as e:
         logger.error(f"DiplomAI question generation error: {e}")
         return []
@@ -321,8 +359,10 @@ def _format_list_field(value) -> str:
     return str(value) if value else ""
 
 
-def _call_openai(client, user_prompt: str) -> dict:
+def _call_openai(client, user_prompt: str, user=None, endpoint: str = "review") -> dict:
     """Internal helper to call OpenAI and parse rubric-based response."""
+    check_daily_token_limit()
+
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -334,6 +374,11 @@ def _call_openai(client, user_prompt: str) -> dict:
             temperature=0.6,
             max_tokens=3000,
         )
+
+        # Log token usage
+        usage = response.usage
+        total_tokens = usage.total_tokens if usage else 3000
+        log_api_usage(user, endpoint, total_tokens, 'gpt-4o-mini')
 
         content = response.choices[0].message.content
         parsed = json.loads(content)
@@ -348,6 +393,8 @@ def _call_openai(client, user_prompt: str) -> dict:
             "example_revision": parsed.get("example_revision", ""),
         }
 
+    except Throttled:
+        raise  # Re-raise daily limit exceeded
     except Exception as e:
         logger.error(f"DiplomAI review error: {e}")
         return {
@@ -407,7 +454,8 @@ def _build_chat_messages(messages: list) -> list:
 
 
 def chat_with_diplomai(messages: list, question_context: str = "",
-                       mode: str = "general", simulation_config: dict | None = None) -> str:
+                       mode: str = "general", simulation_config: dict | None = None,
+                       user=None) -> str:
     """
     Have a conversation with DiplomAI.
 
@@ -416,10 +464,12 @@ def chat_with_diplomai(messages: list, question_context: str = "",
         question_context: Optional context about the current practice question
         mode: 'general' for coaching, 'simulation' for delegate roleplay
         simulation_config: Dict with role, country, topic, stance for simulation mode
+        user: The requesting user (for API usage logging)
 
     Returns:
         The assistant's response text
     """
+    check_daily_token_limit()
     client = get_client()
 
     if mode == "simulation" and simulation_config:
@@ -444,7 +494,15 @@ def chat_with_diplomai(messages: list, question_context: str = "",
             temperature=0.7,
             max_tokens=1000,
         )
+
+        # Log token usage
+        usage = response.usage
+        total_tokens = usage.total_tokens if usage else 1000
+        log_api_usage(user, "chat", total_tokens, 'gpt-4o-mini')
+
         return response.choices[0].message.content
+    except Throttled:
+        raise
     except Exception as e:
         logger.error(f"DiplomAI chat error: {e}")
         if mode == "simulation":

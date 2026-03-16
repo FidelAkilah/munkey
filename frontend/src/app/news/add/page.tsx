@@ -3,6 +3,8 @@ import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
+import { apiFetch, RateLimitError } from "../../../lib/api";
+import { useRateLimitToast } from "../../../components/RateLimitToast";
 
 function compressImage(file: File, maxWidth = 800, quality = 0.7): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -47,6 +49,7 @@ function AddNewsForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
+  const { showRateLimitToast } = useRateLimitToast();
 
   const callbackUrl = searchParams.get("callbackUrl") || "/news/my-articles";
 
@@ -119,7 +122,7 @@ function AddNewsForm() {
       .replace(/^-+|-+$/g, "");
 
     try {
-      const res = await fetch("https://mun-global.onrender.com/api/news/create/", {
+      const res = await apiFetch("https://mun-global.onrender.com/api/news/create/", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -144,9 +147,13 @@ function AddNewsForm() {
         setSubmitStatus("error");
         setErrorMessage(errorData.detail || JSON.stringify(errorData));
       }
-    } catch {
-      setSubmitStatus("error");
-      setErrorMessage("Network error. Please try again.");
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        showRateLimitToast(err.retryAfter, err.customMessage);
+      } else {
+        setSubmitStatus("error");
+        setErrorMessage("Network error. Please try again.");
+      }
     } finally {
       setIsSubmitting(false);
     }

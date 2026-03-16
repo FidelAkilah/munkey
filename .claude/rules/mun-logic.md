@@ -41,6 +41,14 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - DOCX is not supported — prompt users to convert to PDF
 - Feedback is generated synchronously in `SubmissionCreateView.perform_create()`
 - Submission types: TEXT, FILE, VIDEO_URL
+- Submissions/create is rate-limited to 20/hour per user via `AIEndpointThrottle`
+
+## OpenAI Cost Protection
+- `APIUsageLog` model tracks every OpenAI API call (user, endpoint, estimated_tokens, model_name, timestamp)
+- Before every OpenAI call, `check_daily_token_limit()` in `ai_service.py` checks if daily total exceeds `DAILY_TOKEN_LIMIT` (env var, default 500,000). If exceeded, raises `Throttled` → returns 429 with "Our AI tutor is resting for today."
+- All AI service functions (`review_*`, `generate_practice_questions`, `chat_with_diplomai`) accept a `user=` kwarg for logging. Always pass `user=request.user` from views.
+- `log_api_usage()` extracts `response.usage.total_tokens` from the OpenAI response after each call
+- Management command: `python manage.py check_api_usage [--days N]` prints usage by endpoint and user
 
 ## Content Safety
 - Junior (JR) users must only see content flagged `is_junior_safe=True`
@@ -52,3 +60,4 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - Categories: NEWS, GUIDE, INTERVIEW
 - Status flow: PENDING → APPROVED or REJECTED
 - Only Admin (AD) users can approve/reject articles via the admin dashboard
+- Article creation is rate-limited to 10/hour per user via `NewsCreateThrottle`

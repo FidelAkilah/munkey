@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch, RateLimitError } from "../../../lib/api";
+import { useRateLimitToast } from "../../../components/RateLimitToast";
 
 const API_BASE = "https://mun-global.onrender.com";
 
@@ -17,6 +19,7 @@ function SubmitContent() {
 
   const { data: session } = useSession();
   const isAuthenticated = !!session?.user;
+  const { showRateLimitToast } = useRateLimitToast();
 
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
@@ -79,7 +82,7 @@ function SubmitContent() {
         });
       }
 
-      const res = await fetch(`${API_BASE}/api/curriculum/submissions/create/`, {
+      const res = await apiFetch(`${API_BASE}/api/curriculum/submissions/create/`, {
         method: "POST",
         headers,
         body,
@@ -114,7 +117,11 @@ function SubmitContent() {
         }, 2000);
       }
     } catch (err: any) {
-      setError(err.message || "Something went wrong.");
+      if (err instanceof RateLimitError) {
+        showRateLimitToast(err.retryAfter, err.customMessage);
+      } else {
+        setError(err.message || "Something went wrong.");
+      }
     } finally {
       setSubmitting(false);
     }

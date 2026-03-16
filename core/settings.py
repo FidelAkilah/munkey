@@ -117,6 +117,14 @@ CORS_ALLOWED_ORIGINS = env.list(
 )
 CORS_ALLOW_CREDENTIALS = True
 
+# Expose rate limit headers to the frontend
+CORS_EXPOSE_HEADERS = [
+    'X-RateLimit-Limit',
+    'X-RateLimit-Remaining',
+    'X-RateLimit-Reset',
+    'Retry-After',
+]
+
 # Explicit CORS headers — ensures Authorization header is always allowed
 CORS_ALLOW_HEADERS = [
     "accept",
@@ -188,7 +196,21 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'core.authentication.NextAuthJWTAuthentication',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'core.throttling.DefaultUserThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'ai_endpoint': '20/hour',
+        'auth_endpoint': '5/min',
+        'news_create': '10/hour',
+        'comment_post': '30/hour',
+        'default_user': '100/min',
+    },
+    'EXCEPTION_HANDLER': 'core.throttling.custom_exception_handler',
 }
+
+# Daily OpenAI token limit (configurable via env var)
+DAILY_TOKEN_LIMIT = env.int('DAILY_TOKEN_LIMIT', default=500000)
 
 
 

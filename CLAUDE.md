@@ -29,6 +29,8 @@ python manage.py makemigrations       # Generate new migrations
 python manage.py collectstatic        # Gather static files
 python manage.py shell                # Django interactive shell
 python seed_curriculum.py             # Seed curriculum data
+python manage.py check_api_usage      # Print today's OpenAI token usage stats
+python manage.py check_api_usage --days 7  # Usage stats for last 7 days
 ```
 
 ### Frontend
@@ -49,8 +51,8 @@ bash build.sh    # Render deploy script (pip install, collectstatic, migrate)
 ```
 accounts/        → User auth & profiles (custom User model with JR/SR/AD roles)
 community/       → Discussion forum / comments on articles
-core/            → Django settings, authentication middleware, URL routing
-curriculum/      → DiplomAI learning platform (AI feedback, chat, questions)
+core/            → Django settings, authentication, URL routing, throttling
+curriculum/      → DiplomAI learning platform (AI feedback, chat, questions, API usage tracking)
 directory/       → MUN conference locations (lat/long for maps)
 frontend/        → Next.js 16 SPA (src/app/ file-based routing)
 news/            → Article posting with admin approval workflow
@@ -66,7 +68,8 @@ frontend/src/
 │   ├── news/           → Article pages
 │   ├── skills/         → Video tutorial pages
 │   └── api/auth/       → NextAuth credential provider
-├── components/         → Shared components (Navbar, Footer, MUNMap)
+├── components/         → Shared components (Navbar, Footer, MUNMap, RateLimitToast)
+├── lib/                → Utilities (api.ts — fetch wrapper with 429 handling)
 ├── proxy.ts            → Middleware for protected routes
 └── types/              → TypeScript type definitions
 ```
@@ -79,7 +82,7 @@ frontend/src/
 | Frontend   | Next.js 16, React 19, TypeScript 5     |
 | Styling    | Tailwind CSS 4, Framer Motion           |
 | Database   | PostgreSQL (Supabase)                   |
-| AI         | OpenAI API (gpt-3.5-turbo / gpt-4)     |
+| AI         | OpenAI API (gpt-4o-mini)                |
 | Auth       | NextAuth 4 + Django SimpleJWT           |
 | Deploy     | Vercel (frontend) + Render (backend)    |
 
@@ -102,13 +105,32 @@ frontend/src/
 ```
 DEBUG, SECRET_KEY, DATABASE_URL, SIMPLE_JWT_SECRET_KEY,
 NEXTAUTH_SECRET, NEXTAUTH_URL, NEXT_PUBLIC_API_URL,
-OPENAI_API_KEY, PYTHON_VERSION, ALLOWED_HOSTS
+OPENAI_API_KEY, PYTHON_VERSION, ALLOWED_HOSTS,
+DAILY_TOKEN_LIMIT          # Optional, default 500000 — daily OpenAI token cap
 ```
 
 ## Production URLs
 
 - Frontend: https://munkey-zeta.vercel.app
 - Backend API: https://mun-global.onrender.com
+
+## Rate Limiting
+
+All API endpoints are rate-limited via DRF throttling (`core/throttling.py`):
+
+| Endpoint Type | Limit | Scope |
+|---------------|-------|-------|
+| AI endpoints (chat, submissions/create, generate-questions) | 20/hour | per user |
+| Auth endpoints (JWT login/refresh, register) | 5/min | per IP |
+| News creation | 10/hour | per user |
+| All other endpoints (default) | 100/min | per user |
+
+- Daily OpenAI token cap: 500,000 tokens (configurable via `DAILY_TOKEN_LIMIT` env var)
+- `APIUsageLog` model in `curriculum/models.py` tracks every OpenAI call
+- Custom throttle classes live in `core/throttling.py`; throttled auth wrappers in `core/views.py`
+- 429 responses return `{"error": "Rate limit exceeded", "retry_after": <seconds>}` with `Retry-After` header
+- Frontend uses `apiFetch()` from `src/lib/api.ts` + `RateLimitToast` for user-friendly 429 handling
+- When adding new AI endpoints: apply `AIEndpointThrottle`, call `check_daily_token_limit()`, pass `user=request.user` to AI service functions
 
 ## Rules
 

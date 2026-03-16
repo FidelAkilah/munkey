@@ -103,6 +103,31 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-16 — Rate Limiting & OpenAI Cost Protection
+
+**Issue:** No rate limiting on any API endpoints. AI endpoints (chat, submissions, generate-questions) were completely unprotected — risk of abuse and runaway OpenAI costs.
+**Decision:** Added comprehensive rate limiting using DRF's built-in throttling framework, plus an `APIUsageLog` model for daily OpenAI spend tracking.
+**What changed:**
+1. **DRF Throttling** (`core/throttling.py`): Custom throttle classes with proper 429 JSON responses and `Retry-After` / `X-RateLimit-*` headers.
+   - AI endpoints (chat, submissions/create, generate-questions): **20 requests/hour** per user
+   - Auth endpoints (JWT login/refresh): **5 requests/min** per IP
+   - News creation: **10 requests/hour** per user
+   - All other GET endpoints: **100 requests/min** per user (default)
+2. **OpenAI Cost Protection** (`curriculum/models.py: APIUsageLog`): Every OpenAI call logs user, endpoint, estimated_tokens, timestamp. Before each call, `check_daily_token_limit()` rejects with 429 if daily total exceeds `DAILY_TOKEN_LIMIT` env var (default: 500,000 tokens).
+3. **Management Command**: `python manage.py check_api_usage [--days N]` prints token usage stats by endpoint and user.
+4. **Frontend 429 Handling**: `RateLimitToastProvider` wraps the app. `apiFetch()` wrapper in `src/lib/api.ts` detects 429 responses and triggers a user-friendly toast: "You've been practicing a lot! Please wait X minutes before submitting again." or "Our AI tutor is resting for today."
+5. **Auth Throttling**: Throttled wrappers for djoser JWT views in `core/views.py`, registered before djoser includes in `core/urls.py`.
+6. **CORS**: Added `X-RateLimit-*` and `Retry-After` to `CORS_EXPOSE_HEADERS`.
+**Why:** Open AI endpoints are a cost and abuse risk. Rate limiting protects both the budget and the user experience. The daily token cap prevents unexpected OpenAI bills.
+**Rule:**
+- When adding new AI-powered endpoints, apply `AIEndpointThrottle` and call `check_daily_token_limit()` before the OpenAI call.
+- Pass `user=request.user` to all AI service functions for usage logging.
+- Migration `0006_apiusagelog`.
+- New env var: `DAILY_TOKEN_LIMIT` (default 500000). Set in `.env` or Render dashboard.
+- Frontend pages that call throttled endpoints must use `apiFetch()` from `src/lib/api.ts` and handle `RateLimitError`.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 

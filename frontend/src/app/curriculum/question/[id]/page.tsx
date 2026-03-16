@@ -6,6 +6,8 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import { apiFetch, RateLimitError } from "../../../../lib/api";
+import { useRateLimitToast } from "../../../../components/RateLimitToast";
 
 const API_BASE = "https://mun-global.onrender.com";
 
@@ -43,6 +45,7 @@ export default function QuestionDetailPage() {
   const questionId = params.id as string;
   const { data: session } = useSession();
   const token = (session as any)?.user?.accessToken;
+  const { showRateLimitToast } = useRateLimitToast();
 
   const [question, setQuestion] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -132,7 +135,7 @@ export default function QuestionDetailPage() {
         payload.simulation_config = simConfig;
       }
 
-      const res = await fetch(`${API_BASE}/api/curriculum/chat/`, {
+      const res = await apiFetch(`${API_BASE}/api/curriculum/chat/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,15 +154,19 @@ export default function QuestionDetailPage() {
           { role: "assistant", content: "Sorry, I had trouble processing that. Please try again!" },
         ]);
       }
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        { role: "assistant", content: "Connection error. Please try again in a moment." },
-      ]);
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        showRateLimitToast(err.retryAfter, err.customMessage);
+      } else {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", content: "Connection error. Please try again in a moment." },
+        ]);
+      }
     } finally {
       setSending(false);
     }
-  }, [chatInput, sending, token, sessionId, questionId, chatMode, simConfig]);
+  }, [chatInput, sending, token, sessionId, questionId, chatMode, simConfig, showRateLimitToast]);
 
   const startNewConversation = () => {
     setMessages([]);
@@ -183,7 +190,7 @@ export default function QuestionDetailPage() {
     setFeedback(null);
 
     try {
-      const res = await fetch(`${API_BASE}/api/curriculum/submissions/create/`, {
+      const res = await apiFetch(`${API_BASE}/api/curriculum/submissions/create/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -226,7 +233,11 @@ export default function QuestionDetailPage() {
         }, 2000);
       }
     } catch (err: any) {
-      setSubmitError(err.message || "Something went wrong.");
+      if (err instanceof RateLimitError) {
+        showRateLimitToast(err.retryAfter, err.customMessage);
+      } else {
+        setSubmitError(err.message || "Something went wrong.");
+      }
     } finally {
       setSubmitting(false);
     }

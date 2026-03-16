@@ -12,9 +12,12 @@
 - Framer Motion for animations
 
 ## Data Fetching
-- Use `fetch` with the backend API URL from `NEXT_PUBLIC_API_URL`
+- For endpoints that are rate-limited (AI, submissions, news create), use `apiFetch()` from `src/lib/api.ts` instead of raw `fetch`
+- `apiFetch()` detects 429 responses and throws `RateLimitError` — catch it and call `showRateLimitToast()` from the `useRateLimitToast()` hook
+- For read-only GET endpoints that don't need 429 handling, raw `fetch` is fine
 - Always include `Authorization: Bearer {accessToken}` for authenticated endpoints
 - Handle loading and error states in the UI
+- `RateLimitToastProvider` is already in the root layout — just use the `useRateLimitToast()` hook in any client component
 
 ## Authentication
 - NextAuth with CredentialsProvider handles login
@@ -29,4 +32,4 @@
 
 ## Imports
 - Vercel is case-sensitive — always match exact filename casing in imports
-- Use absolute imports with `@/` prefix when configured
+- Use relative imports (e.g., `../../../lib/api`) — the `@/*` alias maps to the frontend root, not `src/`, so `@/src/lib/api` would be needed. Relative imports are simpler and match existing patterns.

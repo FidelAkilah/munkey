@@ -3,9 +3,11 @@ from datetime import date
 
 from django.utils import timezone
 from rest_framework import generics, status, permissions
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
+
+from core.throttling import AIEndpointThrottle
 
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
@@ -137,6 +139,7 @@ class SubmissionCreateView(generics.CreateAPIView):
     """Create a new submission and trigger AI review."""
     serializer_class = SubmissionCreateSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [AIEndpointThrottle]
 
     def perform_create(self, serializer):
         self._submission = serializer.save(user=self.request.user)
@@ -155,6 +158,7 @@ class SubmissionCreateView(generics.CreateAPIView):
 
     def _run_ai_review(self, submission):
         """Run DiplomAI review on the submission."""
+        from rest_framework.exceptions import Throttled
         try:
             question_prompt = submission.question.prompt if submission.question else ""
             # Prefer the question's category for accurate review type detection
@@ -168,23 +172,26 @@ class SubmissionCreateView(generics.CreateAPIView):
             if not text_content and submission.file_upload:
                 text_content = ai_service.extract_text_from_file(submission.file_upload)
 
+            user = submission.user
+
             if category_type == 'DRAFT':
                 result = ai_service.review_draft_resolution(
-                    text_content, question_prompt
+                    text_content, question_prompt, user=user
                 )
             elif category_type == 'SPEECH':
                 result = ai_service.review_speech(
                     text_content=text_content,
                     video_url=submission.video_url,
                     question_prompt=question_prompt,
+                    user=user,
                 )
             elif category_type == 'NEGOTIATION':
                 result = ai_service.review_negotiation(
-                    text_content, question_prompt
+                    text_content, question_prompt, user=user
                 )
             else:
                 result = ai_service.review_general(
-                    text_content, question_prompt
+                    text_content, question_prompt, user=user
                 )
 
             AIFeedback.objects.create(
@@ -200,6 +207,8 @@ class SubmissionCreateView(generics.CreateAPIView):
             submission.status = 'REVIEWED'
             submission.save()
 
+        except Throttled:
+            raise  # Let DRF handle daily limit exceeded as 429
         except Exception as e:
             # Log error but don't break the submission flow
             import logging
@@ -220,6 +229,7 @@ class SubmissionDetailView(generics.RetrieveAPIView):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+@throttle_classes([AIEndpointThrottle])
 def generate_questions(request):
     """Generate practice questions using DiplomAI and save them to the database.
 
@@ -251,6 +261,7 @@ def generate_questions(request):
         category_type=category_type,
         difficulty=difficulty,
         count=count,
+        user=request.user,
     )
 
     # Save generated questions to DB
@@ -419,6 +430,7 @@ def curriculum_stats(request):
 
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
+@throttle_classes([AIEndpointThrottle])
 def chat_send(request):
     """Send a message to DiplomAI and get a response.
 
@@ -488,6 +500,7 @@ def chat_send(request):
         question_context=question_context,
         mode=chat_session.mode,
         simulation_config=chat_session.simulation_config,
+        user=request.user,
     )
 
     # Save AI response

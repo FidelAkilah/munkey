@@ -6,6 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from .models import Article
 from .serializers import ArticleSerializer, ArticleAdminSerializer
+from core.throttling import NewsCreateThrottle
 
 class ArticleListView(generics.ListAPIView):
     """
@@ -46,6 +47,7 @@ class ArticleCreateView(generics.CreateAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = [permissions.IsAuthenticated]
+    throttle_classes = [NewsCreateThrottle]
 
     def perform_create(self, serializer):
         # Automatically set the author to the logged-in user

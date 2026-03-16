@@ -21,9 +21,16 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from core.views import (
+    ThrottledTokenObtainPairView,
+    ThrottledTokenRefreshView,
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Throttled auth endpoints (must come before djoser includes to take priority)
+    path('auth/jwt/create/', ThrottledTokenObtainPairView.as_view(), name='jwt-create'),
+    path('auth/jwt/refresh/', ThrottledTokenRefreshView.as_view(), name='jwt-refresh'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
     # Modular Routing

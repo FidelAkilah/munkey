@@ -6,6 +6,8 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, useInView, AnimatePresence } from "framer-motion";
+import { apiFetch, RateLimitError } from "../../../lib/api";
+import { useRateLimitToast } from "../../../components/RateLimitToast";
 
 const API_BASE = "https://mun-global.onrender.com";
 
@@ -50,6 +52,7 @@ function PracticeContent() {
   const [generating, setGenerating] = useState(false);
   const [aiQuestions, setAiQuestions] = useState<any[]>([]);
   const { data: session } = useSession();
+  const { showRateLimitToast } = useRateLimitToast();
 
   useEffect(() => {
     fetch(`${API_BASE}/api/curriculum/categories/`).then((r) => r.json()).then((data) => setCategories(Array.isArray(data) ? data : data.results || [])).catch(() => {});
@@ -81,7 +84,7 @@ function PracticeContent() {
       const cat = categories.find((c: any) => c.slug === selectedCategory)
         || categories.find((c: any) => String(c.id) === selectedCategory);
       const categoryType = cat?.category_type || "GENERAL";
-      const res = await fetch(`${API_BASE}/api/curriculum/generate-questions/`, {
+      const res = await apiFetch(`${API_BASE}/api/curriculum/generate-questions/`, {
         method: "POST",
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ category_type: categoryType, difficulty: selectedDifficulty || "INT", count: 3 }),
@@ -93,7 +96,14 @@ function PracticeContent() {
         const errData = await res.json().catch(() => ({}));
         alert(errData.detail || "Failed to generate questions. Please try logging out and back in.");
       }
-    } catch (err) { console.error("Generate failed:", err); alert("Network error generating questions. Please try again."); }
+    } catch (err) {
+      if (err instanceof RateLimitError) {
+        showRateLimitToast(err.retryAfter, err.customMessage);
+      } else {
+        console.error("Generate failed:", err);
+        alert("Network error generating questions. Please try again.");
+      }
+    }
     finally { setGenerating(false); }
   };
 
