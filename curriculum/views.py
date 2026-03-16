@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
     Submission, AIFeedback, UserProgress, ChatMessage,
+    ChatSession, MUNTip,
 )
 from .serializers import (
     CurriculumCategorySerializer, CurriculumCategoryListSerializer,
@@ -17,6 +18,7 @@ from .serializers import (
     SubmissionSerializer, SubmissionCreateSerializer,
     AIFeedbackSerializer, UserProgressSerializer,
     GenerateQuestionsSerializer, ChatMessageSerializer, ChatSendSerializer,
+    MUNTipSerializer,
 )
 from . import ai_service
 
@@ -418,7 +420,12 @@ def curriculum_stats(request):
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def chat_send(request):
-    """Send a message to DiplomAI and get a response."""
+    """Send a message to DiplomAI and get a response.
+
+    Supports two modes:
+    - general: Bongo coaches the student (default)
+    - simulation: Bongo roleplays as a delegate defined by simulation_config
+    """
     import uuid
 
     serializer = ChatSendSerializer(data=request.data)
@@ -427,6 +434,8 @@ def chat_send(request):
     user_message = serializer.validated_data['message']
     session_id = serializer.validated_data.get('session_id') or str(uuid.uuid4())[:16]
     question_id = serializer.validated_data.get('question_id')
+    mode = serializer.validated_data.get('mode', 'general')
+    simulation_config = serializer.validated_data.get('simulation_config')
 
     question = None
     question_context = ""
@@ -438,6 +447,23 @@ def chat_send(request):
                 question_context += f"\nHints: {question.hints}"
         except PracticeQuestion.DoesNotExist:
             pass
+
+    # Get or create session to persist mode & config
+    chat_session, _ = ChatSession.objects.get_or_create(
+        session_id=session_id,
+        defaults={
+            'user': request.user,
+            'question': question,
+            'mode': mode,
+            'simulation_config': simulation_config,
+        },
+    )
+    # If mode/config changed mid-session, update
+    if chat_session.mode != mode or (simulation_config and chat_session.simulation_config != simulation_config):
+        chat_session.mode = mode
+        if simulation_config:
+            chat_session.simulation_config = simulation_config
+        chat_session.save()
 
     # Save user message
     ChatMessage.objects.create(
@@ -456,8 +482,13 @@ def chat_send(request):
 
     messages = list(history)
 
-    # Get AI response
-    ai_response = ai_service.chat_with_diplomai(messages, question_context)
+    # Get AI response with mode awareness
+    ai_response = ai_service.chat_with_diplomai(
+        messages,
+        question_context=question_context,
+        mode=chat_session.mode,
+        simulation_config=chat_session.simulation_config,
+    )
 
     # Save AI response
     ai_msg = ChatMessage.objects.create(
@@ -470,6 +501,7 @@ def chat_send(request):
 
     return Response({
         "session_id": session_id,
+        "mode": chat_session.mode,
         "response": ChatMessageSerializer(ai_msg).data,
     }, status=status.HTTP_200_OK)
 
@@ -526,4 +558,31 @@ def question_of_the_day(request):
     return Response({
         "date": today,
         "question": PracticeQuestionSerializer(question).data,
+    })
+
+
+# ── Tip of the Day ──────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([permissions.AllowAny])
+def tip_of_the_day(request):
+    """Return a daily rotating MUN tip from the seeded tip bank."""
+    tip_ids = list(
+        MUNTip.objects.filter(is_active=True)
+        .order_by('id')
+        .values_list('id', flat=True)
+    )
+
+    if not tip_ids:
+        return Response({"error": "No tips available yet."}, status=status.HTTP_404_NOT_FOUND)
+
+    today = date.today().isoformat()
+    day_hash = int(hashlib.md5(f"tip-{today}".encode()).hexdigest(), 16)
+    index = day_hash % len(tip_ids)
+    tip_id = tip_ids[index]
+
+    tip = MUNTip.objects.get(id=tip_id)
+    return Response({
+        "date": today,
+        "tip": MUNTipSerializer(tip).data,
     })

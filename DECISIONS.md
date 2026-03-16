@@ -85,6 +85,24 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-16 — DiplomAI Chat Upgrade: Simulation Mode, Tips, Smart Context
+
+**Decision:** Major upgrade to the DiplomAI chat system with four new features.
+**What changed:**
+1. **Simulation Mode** — New `ChatSession` model tracks session mode (`general` | `simulation`) and `simulation_config` (JSON: role, country, topic, stance). `DIPLOMAI_SIMULATION_PROMPT` in `ai_service.py` makes Bongo roleplay in-character as a delegate. Chat endpoint accepts `mode` and `simulation_config` parameters.
+2. **MUNTip Model + Tip of the Day** — New `MUNTip` model (content, category, difficulty, is_active). Seeded with 35 curated tips via `python manage.py seed_tips`. Endpoint `GET /api/curriculum/tip-of-the-day/` rotates daily. Displayed as a dismissible banner above the chat.
+3. **Smart Chat Context** — Replaced "last 20 messages" with `_build_chat_messages()`: always includes the first message (sets context) + last 15 messages. Avoids losing the opening context in long conversations.
+4. **Quick Action Buttons** — `QUICK_ACTIONS` constant array in the frontend with 5 preset buttons (practice speech, simulate caucus, write clauses, RoP quiz, review position paper). Each sends a pre-configured message.
+5. **New Conversation** — Button clears session state and starts fresh.
+**Why:** The generic chatbot wasn't exercising students' skills. Simulation mode forces them to think on their feet against a realistic opponent. Tips provide passive learning. Smart context prevents lost context in long sessions.
+**Rule:**
+- Chat sessions now persist in `ChatSession` model — the `session_id` foreign key approach is preserved on `ChatMessage` for backward compatibility.
+- When adding simulation roles, update the `<select>` options in `question/[id]/page.tsx` and the prompt in `DIPLOMAI_SIMULATION_PROMPT`.
+- Run `python manage.py seed_tips` after fresh deploys to populate the tip bank.
+- Migration `0005_muntip_chatsession`.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 

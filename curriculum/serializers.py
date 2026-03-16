@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
     Submission, AIFeedback, UserProgress, ChatMessage,
+    ChatSession, MUNTip,
 )
 
 
@@ -129,3 +130,11 @@ class ChatSendSerializer(serializers.Serializer):
     message = serializers.CharField(max_length=2000)
     session_id = serializers.CharField(max_length=64, required=False)
     question_id = serializers.IntegerField(required=False, allow_null=True)
+    mode = serializers.ChoiceField(choices=['general', 'simulation'], default='general', required=False)
+    simulation_config = serializers.DictField(required=False, allow_null=True)
+
+
+class MUNTipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MUNTip
+        fields = ['id', 'content', 'category', 'difficulty']

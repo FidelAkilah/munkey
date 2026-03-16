@@ -9,6 +9,14 @@ import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE = "https://mun-global.onrender.com";
 
+const QUICK_ACTIONS = [
+  { label: "🎤 Practice my opening speech", message: "I want to practice my opening speech for this topic. Can you give me a structure to follow and then let me try?" },
+  { label: "🤝 Simulate a moderated caucus", message: "Let's simulate a moderated caucus. You play the chair and other delegates. I'll practice speaking and responding to questions." },
+  { label: "📜 Help me write operative clauses", message: "Help me draft operative clauses for a resolution on this topic. Guide me through proper UN formatting and actionable language." },
+  { label: "❓ Quiz me on Rules of Procedure", message: "Quiz me on MUN Rules of Procedure. Ask me scenario-based questions about motions, points, and voting procedures." },
+  { label: "📝 Review my position paper", message: "I want to share my position paper draft for feedback. What sections should I include, and can you review it when I paste it?" },
+];
+
 const difficultyLabel: Record<string, { label: string; color: string }> = {
   BEG: { label: "Beginner", color: "bg-green-100 text-green-700" },
   INT: { label: "Intermediate", color: "bg-orange-100 text-[#C66810]" },
@@ -47,6 +55,15 @@ export default function QuestionDetailPage() {
   const [sessionId, setSessionId] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Simulation state
+  const [chatMode, setChatMode] = useState<"general" | "simulation">("general");
+  const [simConfig, setSimConfig] = useState({ role: "opposing_delegate", country: "", topic: "", stance: "" });
+  const [showSimSetup, setShowSimSetup] = useState(false);
+
+  // Tip of the day
+  const [tip, setTip] = useState<{ content: string; category: string } | null>(null);
+  const [tipDismissed, setTipDismissed] = useState(false);
+
   // Submit state
   const [textContent, setTextContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -71,6 +88,14 @@ export default function QuestionDetailPage() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Fetch tip of the day
+  useEffect(() => {
+    fetch(`${API_BASE}/api/curriculum/tip-of-the-day/`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data?.tip) setTip(data.tip); })
+      .catch(() => {});
+  }, []);
+
   // Initialize chat with a welcome message
   useEffect(() => {
     if (question && messages.length === 0) {
@@ -83,30 +108,37 @@ export default function QuestionDetailPage() {
     }
   }, [question, messages.length]);
 
-  const sendMessage = useCallback(async () => {
-    if (!chatInput.trim() || sending) return;
+  const sendMessage = useCallback(async (overrideMessage?: string) => {
+    const msgText = overrideMessage || chatInput.trim();
+    if (!msgText || sending) return;
     if (!token) {
       alert("Please log in to chat with DiplomAI.");
       return;
     }
 
-    const userMsg: ChatMsg = { role: "user", content: chatInput.trim() };
+    const userMsg: ChatMsg = { role: "user", content: msgText };
     setMessages((prev) => [...prev, userMsg]);
     setChatInput("");
     setSending(true);
 
     try {
+      const payload: any = {
+        message: userMsg.content,
+        session_id: sessionId || undefined,
+        question_id: parseInt(questionId),
+        mode: chatMode,
+      };
+      if (chatMode === "simulation" && simConfig.country) {
+        payload.simulation_config = simConfig;
+      }
+
       const res = await fetch(`${API_BASE}/api/curriculum/chat/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          message: userMsg.content,
-          session_id: sessionId || undefined,
-          question_id: parseInt(questionId),
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
@@ -127,7 +159,14 @@ export default function QuestionDetailPage() {
     } finally {
       setSending(false);
     }
-  }, [chatInput, sending, token, sessionId, questionId]);
+  }, [chatInput, sending, token, sessionId, questionId, chatMode, simConfig]);
+
+  const startNewConversation = () => {
+    setMessages([]);
+    setSessionId("");
+    setChatMode("general");
+    setShowSimSetup(false);
+  };
 
   const handleSubmit = async () => {
     if (!textContent.trim()) {
@@ -355,6 +394,89 @@ export default function QuestionDetailPage() {
               transition={{ duration: 0.3 }}
               className="flex flex-col h-[calc(100vh-320px)] min-h-[500px]"
             >
+              {/* Tip of the Day Banner */}
+              {tip && !tipDismissed && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 flex items-start gap-3"
+                >
+                  <span className="text-xl flex-shrink-0">💡</span>
+                  <div className="flex-1">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mb-1">Bongo&apos;s Tip of the Day</p>
+                    <p className="text-sm text-slate-700">{tip.content}</p>
+                  </div>
+                  <button onClick={() => setTipDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg flex-shrink-0">&times;</button>
+                </motion.div>
+              )}
+
+              {/* Mode Toggle + New Conversation */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="flex bg-white rounded-lg border border-slate-200 p-0.5">
+                  <button
+                    onClick={() => { setChatMode("general"); setShowSimSetup(false); }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${chatMode === "general" ? "bg-[#C66810] text-white" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    🐵 Coach Mode
+                  </button>
+                  <button
+                    onClick={() => { setChatMode("simulation"); setShowSimSetup(true); }}
+                    className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${chatMode === "simulation" ? "bg-blue-600 text-white" : "text-slate-500 hover:text-slate-700"}`}
+                  >
+                    🎭 Simulation
+                  </button>
+                </div>
+                <button
+                  onClick={startNewConversation}
+                  className="ml-auto px-3 py-1.5 bg-white text-xs font-medium text-slate-500 border border-slate-200 rounded-lg hover:border-red-300 hover:text-red-500 transition-colors"
+                >
+                  + New Conversation
+                </button>
+              </div>
+
+              {/* Simulation Setup Panel */}
+              <AnimatePresence>
+                {showSimSetup && chatMode === "simulation" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-3 overflow-hidden"
+                  >
+                    <p className="text-xs font-bold text-blue-700 mb-3">Configure the delegate Bongo will roleplay as:</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Country</label>
+                        <input value={simConfig.country} onChange={(e) => setSimConfig((s) => ({ ...s, country: e.target.value }))}
+                          placeholder="e.g. United States" className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm text-slate-700 focus:ring-2 focus:ring-blue-300 focus:border-blue-400 bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Role</label>
+                        <select value={simConfig.role} onChange={(e) => setSimConfig((s) => ({ ...s, role: e.target.value }))}
+                          className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm text-slate-700 bg-white">
+                          <option value="opposing_delegate">Opposing Delegate</option>
+                          <option value="ally_delegate">Allied Delegate</option>
+                          <option value="committee_chair">Committee Chair</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Topic</label>
+                        <input value={simConfig.topic} onChange={(e) => setSimConfig((s) => ({ ...s, topic: e.target.value }))}
+                          placeholder="e.g. Climate Change Financing" className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm text-slate-700 focus:ring-2 focus:ring-blue-300 focus:border-blue-400 bg-white" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-1">Stance</label>
+                        <input value={simConfig.stance} onChange={(e) => setSimConfig((s) => ({ ...s, stance: e.target.value }))}
+                          placeholder="e.g. against binding commitments" className="w-full px-3 py-2 rounded-lg border border-blue-200 text-sm text-slate-700 focus:ring-2 focus:ring-blue-300 focus:border-blue-400 bg-white" />
+                      </div>
+                    </div>
+                    <button onClick={() => setShowSimSetup(false)} className="mt-3 px-4 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 transition-colors">
+                      Start Simulation
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Chat Messages */}
               <div className="flex-1 overflow-y-auto bg-white rounded-2xl border border-slate-200 p-6 mb-4 space-y-4">
                 {messages.map((msg, i) => (
@@ -366,15 +488,17 @@ export default function QuestionDetailPage() {
                     className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
                   >
                     {msg.role === "assistant" && (
-                      <div className="w-9 h-9 rounded-full bg-[#C66810]/10 flex items-center justify-center text-lg flex-shrink-0 mt-1">
-                        🐵
+                      <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0 mt-1 ${chatMode === "simulation" ? "bg-blue-100" : "bg-[#C66810]/10"}`}>
+                        {chatMode === "simulation" ? "🎭" : "🐵"}
                       </div>
                     )}
                     <div
                       className={`max-w-[75%] rounded-2xl px-5 py-3.5 ${
                         msg.role === "user"
                           ? "bg-[#C66810] text-white rounded-br-md"
-                          : "bg-slate-50 text-slate-700 border border-slate-200 rounded-bl-md"
+                          : chatMode === "simulation"
+                            ? "bg-blue-50 text-slate-700 border border-blue-200 rounded-bl-md"
+                            : "bg-slate-50 text-slate-700 border border-slate-200 rounded-bl-md"
                       }`}
                     >
                       <div className="text-sm leading-relaxed whitespace-pre-wrap">
@@ -397,10 +521,10 @@ export default function QuestionDetailPage() {
 
                 {sending && (
                   <div className="flex gap-3 justify-start">
-                    <div className="w-9 h-9 rounded-full bg-[#C66810]/10 flex items-center justify-center text-lg flex-shrink-0">
-                      🐵
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0 ${chatMode === "simulation" ? "bg-blue-100" : "bg-[#C66810]/10"}`}>
+                      {chatMode === "simulation" ? "🎭" : "🐵"}
                     </div>
-                    <div className="bg-slate-50 border border-slate-200 rounded-2xl rounded-bl-md px-5 py-4">
+                    <div className={`rounded-2xl rounded-bl-md px-5 py-4 ${chatMode === "simulation" ? "bg-blue-50 border border-blue-200" : "bg-slate-50 border border-slate-200"}`}>
                       <div className="flex gap-1.5">
                         <div className="w-2 h-2 rounded-full bg-[#C66810] animate-bounce" style={{ animationDelay: "0ms" }} />
                         <div className="w-2 h-2 rounded-full bg-[#C66810] animate-bounce" style={{ animationDelay: "150ms" }} />
@@ -420,36 +544,30 @@ export default function QuestionDetailPage() {
                   value={chatInput}
                   onChange={(e) => setChatInput(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
-                  placeholder="Ask Bongo anything about this exercise..."
+                  placeholder={chatMode === "simulation" ? "Respond to the delegate..." : "Ask Bongo anything about this exercise..."}
                   className="flex-1 px-5 py-3.5 rounded-xl border border-slate-200 text-sm text-slate-700 focus:ring-2 focus:ring-[#C66810]/30 focus:border-[#C66810] shadow-sm bg-white"
                   disabled={sending}
                 />
                 <button
-                  onClick={sendMessage}
+                  onClick={() => sendMessage()}
                   disabled={sending || !chatInput.trim()}
                   className="px-6 py-3.5 bg-[#C66810] text-white font-bold rounded-xl shadow-sm hover:bg-[#A05200] disabled:opacity-50 transition-all text-sm flex items-center gap-2"
                 >
                   {sending ? "..." : "Send"}
-                  {!sending && <span>→</span>}
+                  {!sending && <span>&rarr;</span>}
                 </button>
               </div>
 
-              {/* Quick Prompts */}
+              {/* Quick Action Buttons */}
               <div className="flex flex-wrap gap-2 mt-3">
-                {[
-                  "How should I approach this?",
-                  "Give me a hint",
-                  "What are common mistakes?",
-                  "Explain the key concepts",
-                ].map((prompt) => (
+                {QUICK_ACTIONS.map((action) => (
                   <button
-                    key={prompt}
-                    onClick={() => {
-                      setChatInput(prompt);
-                    }}
-                    className="px-3 py-1.5 bg-white text-xs font-medium text-slate-500 border border-slate-200 rounded-full hover:border-[#C66810] hover:text-[#C66810] transition-colors"
+                    key={action.label}
+                    onClick={() => sendMessage(action.message)}
+                    disabled={sending}
+                    className="px-3 py-1.5 bg-white text-xs font-medium text-slate-500 border border-slate-200 rounded-full hover:border-[#C66810] hover:text-[#C66810] transition-colors disabled:opacity-50"
                   >
-                    {prompt}
+                    {action.label}
                   </button>
                 ))}
               </div>

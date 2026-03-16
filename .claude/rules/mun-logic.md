@@ -29,7 +29,11 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - Each review function has its own rubric criteria (speech: 6 criteria, draft: 5, negotiation: 5, general: 4)
 - `_format_list_field()` converts array responses to bullet-point strings for DB storage
 - Practice questions must include: title, prompt, hints, sample_answers
-- Chat sessions use a `session_id` for conversation persistence
+- Chat sessions use `ChatSession` model (session_id, mode, simulation_config) + `ChatMessage` for individual messages
+- Chat modes: `general` (Bongo coaches) and `simulation` (Bongo roleplays as a delegate via `DIPLOMAI_SIMULATION_PROMPT`)
+- Chat context window: first message + last 15 messages (via `_build_chat_messages()`)
+- `MUNTip` model stores curated tips; `GET /api/curriculum/tip-of-the-day/` rotates daily
+- Seed tips with `python manage.py seed_tips` (35 tips across all 6 categories)
 
 ## Submissions
 - Submission → AIFeedback is a **one-to-one** relationship

@@ -29,6 +29,9 @@ urlpatterns = [
     path('chat/', views.chat_send, name='curriculum-chat'),
     path('chat/history/', views.chat_history, name='curriculum-chat-history'),
 
+    # Tip of the Day
+    path('tip-of-the-day/', views.tip_of_the_day, name='curriculum-tip'),
+
     # Progress
     path('progress/', views.UserProgressListView.as_view(), name='curriculum-progress'),
     path('progress/complete/<int:lesson_id>/', views.mark_lesson_complete, name='curriculum-complete-lesson'),

@@ -146,6 +146,27 @@ class UserProgress(models.Model):
         return f"{status} {self.user.username} — {self.lesson.title}"
 
 
+class ChatSession(models.Model):
+    """Tracks a chat session's mode and simulation configuration."""
+    MODE_CHOICES = [
+        ('general', 'General Chat'),
+        ('simulation', 'Scenario Simulation'),
+    ]
+
+    session_id = models.CharField(max_length=64, unique=True, db_index=True)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='chat_sessions', on_delete=models.CASCADE)
+    question = models.ForeignKey(PracticeQuestion, related_name='chat_sessions', on_delete=models.CASCADE, null=True, blank=True)
+    mode = models.CharField(max_length=12, choices=MODE_CHOICES, default='general')
+    simulation_config = models.JSONField(null=True, blank=True, help_text='{"role": "opposing_delegate", "country": "...", "topic": "...", "stance": "..."}')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.mode} ({self.session_id[:8]})"
+
+
 class ChatMessage(models.Model):
     """Chat messages between user and DiplomAI about a question or topic."""
     ROLE_CHOICES = [
@@ -165,3 +186,21 @@ class ChatMessage(models.Model):
 
     def __str__(self):
         return f"[{self.role}] {self.content[:60]}..."
+
+
+class MUNTip(models.Model):
+    """Curated MUN tips displayed as daily rotating tips."""
+    CATEGORY_CHOICES = CurriculumCategory.CATEGORY_CHOICES
+
+    content = models.TextField(help_text="The tip text")
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='GENERAL')
+    difficulty = models.CharField(max_length=3, choices=Lesson.DIFFICULTY_CHOICES, default='BEG')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['id']
+        verbose_name = 'MUN Tip'
+
+    def __str__(self):
+        return self.content[:80]

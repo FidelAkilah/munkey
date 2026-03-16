@@ -361,31 +361,81 @@ def _call_openai(client, user_prompt: str) -> dict:
         }
 
 
-def chat_with_diplomai(messages: list, question_context: str = "") -> str:
+DIPLOMAI_SIMULATION_PROMPT = """You are roleplaying as a Model United Nations delegate in a simulation exercise on the MUNKEY platform.
+
+You are NOT Bongo the coach right now. You are fully IN CHARACTER as the delegate described below.
+
+Your role: {role}
+Country: {country}
+Topic: {topic}
+Stance: {stance}
+
+Guidelines for the simulation:
+- Stay completely in character as this delegate at all times
+- Respond as this delegate would in a real MUN committee — use diplomatic language and refer to yourself as "the delegate of {country}" or "my delegation"
+- Push back on the student's arguments with realistic counterpoints based on your country's known positions
+- Raise procedural objections, request evidence, and challenge weak proposals
+- Be firm but diplomatic — never break character to coach (that's Bongo's job, not yours right now)
+- If the student makes a strong argument, acknowledge it grudgingly but pivot to your next concern
+- Use real-world facts, policies, and precedents that your country would actually cite
+- Keep responses concise (under 200 words) to simulate real committee back-and-forth
+- If the student proposes compromise, evaluate it genuinely from your country's perspective
+"""
+
+
+def _build_chat_messages(messages: list) -> list:
+    """Build a smart context window from conversation history.
+
+    Strategy:
+    - Always include the first message (sets context/tone)
+    - Include the last 15 messages for recent context
+    - Avoids duplicating the first message if it's within the last 15
+    """
+    if not messages:
+        return []
+
+    if len(messages) <= 16:
+        return [{"role": m["role"], "content": m["content"]} for m in messages]
+
+    first = messages[0]
+    recent = messages[-15:]
+
+    result = [{"role": first["role"], "content": first["content"]}]
+    for msg in recent:
+        result.append({"role": msg["role"], "content": msg["content"]})
+    return result
+
+
+def chat_with_diplomai(messages: list, question_context: str = "",
+                       mode: str = "general", simulation_config: dict | None = None) -> str:
     """
     Have a conversation with DiplomAI.
-    
+
     Args:
         messages: List of dicts with 'role' and 'content' keys (conversation history)
         question_context: Optional context about the current practice question
-    
+        mode: 'general' for coaching, 'simulation' for delegate roleplay
+        simulation_config: Dict with role, country, topic, stance for simulation mode
+
     Returns:
         The assistant's response text
     """
     client = get_client()
 
-    system_msg = DIPLOMAI_CHAT_PROMPT
-    if question_context:
-        system_msg += f"\n\nThe delegate is currently working on this practice exercise:\n{question_context}\n\nHelp them with this exercise specifically if they ask about it."
+    if mode == "simulation" and simulation_config:
+        system_msg = DIPLOMAI_SIMULATION_PROMPT.format(
+            role=simulation_config.get("role", "opposing_delegate"),
+            country=simulation_config.get("country", "an unnamed country"),
+            topic=simulation_config.get("topic", "the current agenda item"),
+            stance=simulation_config.get("stance", "a cautious position"),
+        )
+    else:
+        system_msg = DIPLOMAI_CHAT_PROMPT
+        if question_context:
+            system_msg += f"\n\nThe delegate is currently working on this practice exercise:\n{question_context}\n\nHelp them with this exercise specifically if they ask about it."
 
     openai_messages = [{"role": "system", "content": system_msg}]
-    
-    # Include up to last 20 messages for context
-    for msg in messages[-20:]:
-        openai_messages.append({
-            "role": msg["role"],
-            "content": msg["content"],
-        })
+    openai_messages.extend(_build_chat_messages(messages))
 
     try:
         response = client.chat.completions.create(
@@ -397,4 +447,6 @@ def chat_with_diplomai(messages: list, question_context: str = "") -> str:
         return response.choices[0].message.content
     except Exception as e:
         logger.error(f"DiplomAI chat error: {e}")
+        if mode == "simulation":
+            return "The delegate is momentarily indisposed. Please try again shortly."
         return "I'm having trouble processing your message right now. Please try again in a moment! — Bongo 🦉"
