@@ -12,7 +12,7 @@ from core.throttling import AIEndpointThrottle
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
     Submission, AIFeedback, UserProgress, ChatMessage,
-    ChatSession, MUNTip,
+    ChatSession, MUNTip, UserStats,
 )
 from .serializers import (
     CurriculumCategorySerializer, CurriculumCategoryListSerializer,
@@ -20,7 +20,7 @@ from .serializers import (
     SubmissionSerializer, SubmissionCreateSerializer,
     AIFeedbackSerializer, UserProgressSerializer,
     GenerateQuestionsSerializer, ChatMessageSerializer, ChatSendSerializer,
-    MUNTipSerializer,
+    MUNTipSerializer, UserStatsSerializer,
 )
 from . import ai_service
 
@@ -598,4 +598,129 @@ def tip_of_the_day(request):
     return Response({
         "date": today,
         "tip": MUNTipSerializer(tip).data,
+    })
+
+
+# ── User Stats & Progress ─────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_stats_view(request):
+    """Return the authenticated user's aggregated stats with rank badge."""
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+    return Response(UserStatsSerializer(stats).data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def user_progress_view(request):
+    """Return detailed progress: lessons per category, questions attempted,
+    score trend, and suggested next steps."""
+    from django.db.models import Count, Avg
+
+    user = request.user
+
+    # Lessons completed per category
+    lessons_by_cat = list(
+        UserProgress.objects.filter(user=user, completed=True)
+        .values('lesson__category__category_type', 'lesson__category__name')
+        .annotate(completed=Count('id'))
+        .order_by('lesson__category__category_type')
+    )
+
+    # Questions attempted per category
+    questions_by_cat = list(
+        Submission.objects.filter(user=user)
+        .values('category__category_type', 'category__name')
+        .annotate(attempted=Count('id'))
+        .order_by('category__category_type')
+    )
+
+    # Score trend — last 10 submissions with dates and scores
+    score_trend = list(
+        AIFeedback.objects.filter(submission__user=user)
+        .order_by('-created_at')[:10]
+        .values('overall_score', 'created_at', 'submission__category__category_type')
+    )
+    # Reverse to show oldest-first for charting
+    score_trend.reverse()
+
+    # Suggested next steps based on weakest category
+    stats, _ = UserStats.objects.get_or_create(user=user)
+    weakest_category = None
+    if stats.scores_by_category:
+        weakest = min(
+            stats.scores_by_category.items(),
+            key=lambda x: x[1].get('avg', 100),
+            default=None,
+        )
+        if weakest:
+            weakest_category = {
+                'category_type': weakest[0],
+                'average_score': weakest[1].get('avg', 0),
+                'suggestion': f"Focus on {weakest[0].title()} — your average is {weakest[1].get('avg', 0)}. Try more exercises in this area.",
+            }
+
+    return Response({
+        "lessons_by_category": lessons_by_cat,
+        "questions_by_category": questions_by_cat,
+        "score_trend": [
+            {
+                "score": s['overall_score'],
+                "date": s['created_at'].isoformat() if s['created_at'] else None,
+                "category": s['submission__category__category_type'],
+            }
+            for s in score_trend
+        ],
+        "weakest_category": weakest_category,
+    })
+
+
+# ── Recommendations ────────────────────────────────────────
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def recommendations_view(request):
+    """Suggest lessons and questions based on the user's weakest category."""
+    stats, _ = UserStats.objects.get_or_create(user=request.user)
+
+    # Determine weakest category
+    if not stats.scores_by_category:
+        # No data yet — recommend beginner content from GENERAL
+        weakest_type = 'GENERAL'
+    else:
+        weakest_type = min(
+            stats.scores_by_category.items(),
+            key=lambda x: x[1].get('avg', 100),
+        )[0]
+
+    # Find lessons the user hasn't completed in the weakest category
+    completed_lesson_ids = UserProgress.objects.filter(
+        user=request.user, completed=True
+    ).values_list('lesson_id', flat=True)
+
+    recommended_lessons = Lesson.objects.filter(
+        category__category_type=weakest_type,
+    ).exclude(id__in=completed_lesson_ids).order_by('difficulty', 'order')[:5]
+
+    # Determine appropriate difficulty
+    avg = (stats.scores_by_category.get(weakest_type, {}).get('avg', 0)) if stats.scores_by_category else 0
+    if avg >= 75:
+        difficulty = 'ADV'
+    elif avg >= 50:
+        difficulty = 'INT'
+    else:
+        difficulty = 'BEG'
+
+    recommended_questions = PracticeQuestion.objects.filter(
+        category__category_type=weakest_type,
+        difficulty=difficulty,
+    ).order_by('-is_seeded', '?')[:5]
+
+    return Response({
+        "weakest_category": weakest_type,
+        "average_score": avg,
+        "recommended_difficulty": difficulty,
+        "lessons": LessonSerializer(recommended_lessons, many=True).data,
+        "questions": PracticeQuestionSerializer(recommended_questions, many=True).data,
     })

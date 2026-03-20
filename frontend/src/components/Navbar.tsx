@@ -34,6 +34,7 @@ export default function Navbar() {
     { href: '/news', label: 'NEWS' },
     { href: '/skills', label: 'SKILL SHARING' },
     { href: '/curriculum', label: 'DIPLOMAI', hasIcon: true },
+    ...(isAuthenticated ? [{ href: '/dashboard', label: 'DASHBOARD' }] : []),
   ];
 
   return (
@@ -126,11 +127,18 @@ export default function Navbar() {
 
                       <div className="py-1">
                         <Link
+                          href="/dashboard"
+                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-[#C66810] transition-colors font-medium"
+                          onClick={() => setShowUserMenu(false)}
+                        >
+                          <span>📊</span> Dashboard
+                        </Link>
+                        <Link
                           href="/profile"
                           className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-600 hover:bg-orange-50 hover:text-[#C66810] transition-colors font-medium"
                           onClick={() => setShowUserMenu(false)}
                         >
-                          <span>📊</span> My Profile & Progress
+                          <span>👤</span> My Profile
                         </Link>
                         <Link
                           href="/news/my-articles"

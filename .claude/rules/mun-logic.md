@@ -50,6 +50,17 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - `log_api_usage()` extracts `response.usage.total_tokens` from the OpenAI response after each call
 - Management command: `python manage.py check_api_usage [--days N]` prints usage by endpoint and user
 
+## Progress Tracking & UserStats
+- `UserStats` model (OneToOne with User) stores aggregated stats: `total_submissions`, `average_score`, `best_score`, `current_streak_days`, `longest_streak_days`, `last_active_date`, `scores_by_category` (JSONField)
+- Updated automatically via `post_save` signal on `AIFeedback` in `curriculum/signals.py` — never update manually in views
+- Streak logic: increments if user submitted yesterday, resets if gap > 1 day, no-op if same day
+- Rank badges computed in `UserStatsSerializer.get_rank_badge()`: Novice (0-44), Junior (45-64), Senior (65-79), Distinguished (80-89), Best Delegate (90+)
+- `GET /api/curriculum/user-stats/` — returns full UserStats with rank badge
+- `GET /api/curriculum/user-progress/` — lessons/questions per category, score trend, weakest category suggestion
+- `GET /api/curriculum/recommendations/` — lessons and questions for weakest category at appropriate difficulty
+- Seed command: `python manage.py seed_user_stats` — backfills UserStats for existing users
+- Frontend dashboard at `/dashboard` uses Recharts (radar chart + line chart)
+
 ## Content Safety
 - Junior (JR) users must only see content flagged `is_junior_safe=True`
 - Articles require admin approval before being visible (status: PENDING → APPROVED)

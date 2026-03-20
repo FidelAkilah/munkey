@@ -36,6 +36,11 @@ urlpatterns = [
     path('progress/', views.UserProgressListView.as_view(), name='curriculum-progress'),
     path('progress/complete/<int:lesson_id>/', views.mark_lesson_complete, name='curriculum-complete-lesson'),
 
-    # Dashboard stats
+    # Dashboard stats (legacy — aggregate on-the-fly)
     path('stats/', views.curriculum_stats, name='curriculum-stats'),
+
+    # New progress system
+    path('user-stats/', views.user_stats_view, name='curriculum-user-stats'),
+    path('user-progress/', views.user_progress_view, name='curriculum-user-progress'),
+    path('recommendations/', views.recommendations_view, name='curriculum-recommendations'),
 ]

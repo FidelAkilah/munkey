@@ -31,6 +31,7 @@ python manage.py shell                # Django interactive shell
 python seed_curriculum.py             # Seed curriculum data
 python manage.py check_api_usage      # Print today's OpenAI token usage stats
 python manage.py check_api_usage --days 7  # Usage stats for last 7 days
+python manage.py seed_user_stats      # Create/update UserStats for existing users
 ```
 
 ### Frontend
@@ -52,7 +53,7 @@ bash build.sh    # Render deploy script (pip install, collectstatic, migrate)
 accounts/        → User auth & profiles (custom User model with JR/SR/AD roles)
 community/       → Discussion forum / comments on articles
 core/            → Django settings, authentication, URL routing, throttling
-curriculum/      → DiplomAI learning platform (AI feedback, chat, questions, API usage tracking)
+curriculum/      → DiplomAI learning platform (AI feedback, chat, questions, API usage tracking, UserStats/progress)
 directory/       → MUN conference locations (lat/long for maps)
 frontend/        → Next.js 16 SPA (src/app/ file-based routing)
 news/            → Article posting with admin approval workflow
@@ -65,6 +66,7 @@ skills/          → YouTube skill video categories & tutorials
 frontend/src/
 ├── app/                → Pages (file-based routing)
 │   ├── curriculum/     → Learning platform pages
+│   ├── dashboard/      → Progress dashboard (recharts, radar/line charts)
 │   ├── news/           → Article pages
 │   ├── skills/         → Video tutorial pages
 │   └── api/auth/       → NextAuth credential provider
@@ -79,7 +81,7 @@ frontend/src/
 | Layer      | Technology                              |
 |------------|-----------------------------------------|
 | Backend    | Django 5.1, DRF 3.15, SimpleJWT        |
-| Frontend   | Next.js 16, React 19, TypeScript 5     |
+| Frontend   | Next.js 16, React 19, TypeScript 5, Recharts |
 | Styling    | Tailwind CSS 4, Framer Motion           |
 | Database   | PostgreSQL (Supabase)                   |
 | AI         | OpenAI API (gpt-4o-mini)                |

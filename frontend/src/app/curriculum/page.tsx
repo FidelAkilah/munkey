@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { motion, useInView } from "framer-motion";
 
-const API_BASE = "https://mun-global.onrender.com";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "https://mun-global.onrender.com";
 
 const categoryIcons: Record<string, string> = {
   SPEECH: "🎤",
@@ -45,9 +45,12 @@ function AnimatedSection({ children, className = "", delay = 0 }: { children: Re
 export default function CurriculumPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [dailyQuestion, setDailyQuestion] = useState<any>(null);
+  const [recommendations, setRecommendations] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { data: session } = useSession();
-  const isAuthenticated = !!session?.user;
+  const user = session?.user as any;
+  const isAuthenticated = !!user;
+  const token = user?.accessToken;
 
   useEffect(() => {
     async function fetchData() {
@@ -73,6 +76,17 @@ export default function CurriculumPage() {
     }
     fetchData();
   }, []);
+
+  // Fetch recommendations for authenticated users
+  useEffect(() => {
+    if (!token) return;
+    fetch(`${API_BASE}/api/curriculum/recommendations/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setRecommendations(data); })
+      .catch(() => {});
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -177,6 +191,73 @@ export default function CurriculumPage() {
                 </div>
               </div>
             </Link>
+          </AnimatedSection>
+        </section>
+      )}
+
+      {/* Suggested for You */}
+      {isAuthenticated && recommendations && (recommendations.lessons?.length > 0 || recommendations.questions?.length > 0) && (
+        <section className="max-w-7xl mx-auto px-6 lg:px-8 pt-16 pb-0">
+          <AnimatedSection>
+            <div className="bg-white rounded-2xl border border-orange-200 p-8 shadow-sm">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-xl">🐵</div>
+                <div>
+                  <h3 className="text-lg font-bold text-slate-900">Suggested for You</h3>
+                  <p className="text-sm text-slate-500">
+                    Based on your weakest area: <span className="font-bold text-[#C66810]">{recommendations.weakest_category}</span>
+                    {recommendations.average_score > 0 && (
+                      <span> (avg {recommendations.average_score})</span>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              {recommendations.lessons?.length > 0 && (
+                <div className="mb-6">
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Recommended Lessons</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {recommendations.lessons.slice(0, 3).map((lesson: any) => (
+                      <Link
+                        key={lesson.id}
+                        href={`/curriculum/practice?category=${lesson.slug}`}
+                        className="group p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all"
+                      >
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[9px] font-bold uppercase tracking-widest text-[#C66810] bg-orange-50 px-2 py-0.5 rounded">
+                            {lesson.difficulty === "BEG" ? "Beginner" : lesson.difficulty === "INT" ? "Intermediate" : "Advanced"}
+                          </span>
+                        </div>
+                        <h5 className="text-sm font-bold text-slate-800 group-hover:text-[#C66810] transition-colors line-clamp-2">
+                          {lesson.title}
+                        </h5>
+                        <p className="text-[10px] text-slate-400 mt-1">{lesson.estimated_minutes} min</p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {recommendations.questions?.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Practice Exercises</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {recommendations.questions.slice(0, 4).map((q: any) => (
+                      <Link
+                        key={q.id}
+                        href={`/curriculum/question/${q.id}`}
+                        className="group p-4 rounded-xl border border-slate-200 hover:border-orange-300 hover:shadow-md transition-all"
+                      >
+                        <h5 className="text-sm font-bold text-slate-800 group-hover:text-[#C66810] transition-colors line-clamp-1">
+                          {q.title}
+                        </h5>
+                        <p className="text-xs text-slate-500 mt-1 line-clamp-2">{q.prompt?.slice(0, 120)}...</p>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </AnimatedSection>
         </section>
       )}

@@ -228,6 +228,30 @@ class APIUsageLog(models.Model):
         return used < limit, used
 
 
+class UserStats(models.Model):
+    """Aggregated progress stats for a user, updated via signals after each AI feedback."""
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name='stats', on_delete=models.CASCADE)
+    total_submissions = models.PositiveIntegerField(default=0)
+    average_score = models.FloatField(default=0.0)
+    best_score = models.PositiveIntegerField(default=0)
+    total_practice_time_minutes = models.PositiveIntegerField(default=0)
+    current_streak_days = models.PositiveIntegerField(default=0)
+    longest_streak_days = models.PositiveIntegerField(default=0)
+    last_active_date = models.DateField(null=True, blank=True)
+    scores_by_category = models.JSONField(
+        default=dict, blank=True,
+        help_text='{"SPEECH": {"avg": 75, "count": 5, "total": 375}, ...}',
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'User Stats'
+        verbose_name_plural = 'User Stats'
+
+    def __str__(self):
+        return f"{self.user.username} — avg {self.average_score}, streak {self.current_streak_days}d"
+
+
 class MUNTip(models.Model):
     """Curated MUN tips displayed as daily rotating tips."""
     CATEGORY_CHOICES = CurriculumCategory.CATEGORY_CHOICES

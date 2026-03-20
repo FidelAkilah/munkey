@@ -128,6 +128,37 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-21 — Progress Dashboard & UserStats System
+
+**Issue:** No way for users to track learning progress beyond basic lesson completion. The existing `curriculum_stats` endpoint computed everything on-the-fly with no persistence, streaks, or rank system.
+**Decision:** Built a full progress tracking system with a persistent `UserStats` model, Django signals, new API endpoints, a frontend dashboard with charts, and personalized recommendations.
+**What changed:**
+1. **UserStats Model** (`curriculum/models.py`): OneToOne with User — tracks `total_submissions`, `average_score`, `best_score`, `current_streak_days`, `longest_streak_days`, `last_active_date`, `scores_by_category` (JSONField). Auto-updated via Django signal on every `AIFeedback` creation.
+2. **Django Signal** (`curriculum/signals.py`): `post_save` on `AIFeedback` recalculates all UserStats fields including streak logic (consecutive days of submissions).
+3. **New API Endpoints:**
+   - `GET /api/curriculum/user-stats/` — returns `UserStats` with rank badge (Novice/Junior/Senior/Distinguished/Best Delegate)
+   - `GET /api/curriculum/user-progress/` — lessons per category, questions attempted, score trend (last 10 with dates), weakest category suggestion
+   - `GET /api/curriculum/recommendations/` — lessons and questions for the user's weakest category at appropriate difficulty
+4. **Frontend Dashboard** (`/dashboard`): Recharts-powered page with streak counter, rank badge, skills radar chart (all 6 categories), score trend line chart, category breakdown cards, rank progress bar, recent submissions list.
+5. **Navbar** updated: "DASHBOARD" link for authenticated users, dropdown now shows both Dashboard and Profile.
+6. **Curriculum Page**: "Suggested for You" section fetches `/recommendations/` and shows lessons + exercises for the weakest category.
+7. **Management Command**: `python manage.py seed_user_stats` — creates/updates `UserStats` for all existing users with submissions.
+8. **Rank Badge System** (computed in serializer):
+   - Novice Delegate: 0-44
+   - Junior Delegate: 45-64
+   - Senior Delegate: 65-79
+   - Distinguished Delegate: 80-89
+   - Best Delegate: 90+
+**Why:** Users had no visibility into their growth, no motivation loop (streaks/badges), and no guidance on what to work on next. The dashboard and recommendations create a feedback loop that drives engagement.
+**Rule:**
+- `UserStats` is updated automatically via signal — never update it manually in views.
+- When adding new submission flows, ensure `AIFeedback` is still created via `AIFeedback.objects.create()` so the signal fires.
+- Run `python manage.py seed_user_stats` after fresh deploys or DB resets to backfill stats for existing users.
+- Migration `0007_userstats`.
+- Frontend dependency added: `recharts`.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 

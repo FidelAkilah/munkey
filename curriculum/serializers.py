@@ -2,7 +2,7 @@ from rest_framework import serializers
 from .models import (
     CurriculumCategory, Lesson, PracticeQuestion,
     Submission, AIFeedback, UserProgress, ChatMessage,
-    ChatSession, MUNTip,
+    ChatSession, MUNTip, UserStats,
 )
 
 
@@ -132,6 +132,32 @@ class ChatSendSerializer(serializers.Serializer):
     question_id = serializers.IntegerField(required=False, allow_null=True)
     mode = serializers.ChoiceField(choices=['general', 'simulation'], default='general', required=False)
     simulation_config = serializers.DictField(required=False, allow_null=True)
+
+
+class UserStatsSerializer(serializers.ModelSerializer):
+    username = serializers.ReadOnlyField(source='user.username')
+    rank_badge = serializers.SerializerMethodField()
+
+    class Meta:
+        model = UserStats
+        fields = [
+            'username', 'total_submissions', 'average_score', 'best_score',
+            'total_practice_time_minutes', 'current_streak_days',
+            'longest_streak_days', 'last_active_date', 'scores_by_category',
+            'rank_badge', 'updated_at',
+        ]
+
+    def get_rank_badge(self, obj):
+        score = obj.average_score
+        if score >= 90:
+            return {'name': 'Best Delegate', 'icon': '👑', 'min_score': 90}
+        if score >= 80:
+            return {'name': 'Distinguished Delegate', 'icon': '🏆', 'min_score': 80}
+        if score >= 65:
+            return {'name': 'Senior Delegate', 'icon': '📙', 'min_score': 65}
+        if score >= 45:
+            return {'name': 'Junior Delegate', 'icon': '📗', 'min_score': 45}
+        return {'name': 'Novice Delegate', 'icon': '🌱', 'min_score': 0}
 
 
 class MUNTipSerializer(serializers.ModelSerializer):
