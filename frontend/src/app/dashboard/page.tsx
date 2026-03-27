@@ -127,13 +127,13 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <video
-                src="/munkeyanimation.mp4"
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover rounded-full drop-shadow-2xl relative z-10"
-              />
+          src="/munkeyanimation.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-36 h-36 md:w-44 md:h-44 object-cover rounded-full drop-shadow-2xl relative z-10 animate-pulse"
+        />
       </div>
     );
   }
