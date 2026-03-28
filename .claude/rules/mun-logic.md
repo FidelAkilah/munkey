@@ -72,3 +72,13 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - Status flow: PENDING → APPROVED or REJECTED
 - Only Admin (AD) users can approve/reject articles via the admin dashboard
 - Article creation is rate-limited to 10/hour per user via `NewsCreateThrottle`
+
+## Global Search
+- `GET /api/search/?q=<query>&type=<all|articles|lessons|questions|conferences>` in `core/views.py`
+- Uses PostgreSQL `SearchVector` + `SearchRank` + `SearchQuery` (websearch type) with GIN indexes
+- Searchable models: `Article` (title+content), `Lesson` (title+content), `PracticeQuestion` (title+prompt), `Conference` (name+city+country)
+- Only `APPROVED` articles appear in search results
+- JR users only see articles with `is_junior_safe=True`
+- `AllowAny` permission — anonymous users can search
+- When adding a new searchable model: add `GinIndex(SearchVector(...))` in model Meta, create a `_search_<type>` helper in `core/views.py`, add the type to the dispatch map in `global_search`
+- Frontend: Navbar dropdown (300ms debounce) + `/search` results page with tabs per content type

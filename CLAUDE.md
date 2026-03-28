@@ -52,7 +52,7 @@ bash build.sh    # Render deploy script (pip install, collectstatic, migrate)
 ```
 accounts/        → User auth & profiles (custom User model with JR/SR/AD roles)
 community/       → Discussion forum / comments on articles
-core/            → Django settings, authentication, URL routing, throttling
+core/            → Django settings, authentication, URL routing, throttling, global search
 curriculum/      → DiplomAI learning platform (AI feedback, chat, questions, API usage tracking, UserStats/progress)
 directory/       → MUN conference locations (lat/long for maps)
 frontend/        → Next.js 16 SPA (src/app/ file-based routing)
@@ -68,6 +68,7 @@ frontend/src/
 │   ├── curriculum/     → Learning platform pages
 │   ├── dashboard/      → Progress dashboard (recharts, radar/line charts)
 │   ├── news/           → Article pages
+│   ├── search/         → Search results page with tabs
 │   ├── skills/         → Video tutorial pages
 │   └── api/auth/       → NextAuth credential provider
 ├── components/         → Shared components (Navbar, Footer, MUNMap, RateLimitToast)
@@ -133,6 +134,18 @@ All API endpoints are rate-limited via DRF throttling (`core/throttling.py`):
 - 429 responses return `{"error": "Rate limit exceeded", "retry_after": <seconds>}` with `Retry-After` header
 - Frontend uses `apiFetch()` from `src/lib/api.ts` + `RateLimitToast` for user-friendly 429 handling
 - When adding new AI endpoints: apply `AIEndpointThrottle`, call `check_daily_token_limit()`, pass `user=request.user` to AI service functions
+
+## Global Search
+
+- Endpoint: `GET /api/search/?q=<query>&type=<all|articles|lessons|questions|conferences>`
+- Uses PostgreSQL full-text search (`SearchVector`, `SearchRank`, `SearchQuery` with `websearch` type)
+- GIN indexes on all searchable models for performance
+- Returns results grouped by type, max 10 per type, with snippets
+- JR users only see `is_junior_safe` articles; only approved articles are searchable
+- `AllowAny` permission — works for anonymous users too
+- Backend implementation in `core/views.py` (`global_search` + `_search_*` helpers)
+- Frontend: Navbar search dropdown (debounced 300ms) + full `/search` results page with tabs
+- When adding searchable models: add GIN index, add `_search_<type>` helper in `core/views.py`
 
 ## Rules
 

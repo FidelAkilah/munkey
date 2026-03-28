@@ -1,3 +1,5 @@
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector
 from django.db import models
 from django.conf import settings
 
@@ -47,6 +49,9 @@ class Lesson(models.Model):
 
     class Meta:
         ordering = ['order']
+        indexes = [
+            GinIndex(SearchVector('title', 'content', config='english'), name='lesson_search_idx'),
+        ]
 
     def __str__(self):
         return self.title
@@ -76,6 +81,9 @@ class PracticeQuestion(models.Model):
 
     class Meta:
         ordering = ['-is_seeded', '-created_at']
+        indexes = [
+            GinIndex(SearchVector('title', 'prompt', config='english'), name='question_search_idx'),
+        ]
 
     def __str__(self):
         return self.title

@@ -159,6 +159,24 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-27 — Global Search with PostgreSQL Full-Text Search
+
+**Decision:** Added platform-wide search across articles, lessons, practice questions, and conferences using PostgreSQL's native full-text search (`SearchVector`, `SearchRank`, `SearchQuery`).
+**What changed:**
+1. **Backend Search Endpoint** (`core/views.py`): `GET /api/search/?q=<query>&type=<all|articles|lessons|questions|conferences>`. Uses `websearch` SearchQuery type for natural language support (AND/OR/NOT). Returns results grouped by type, max 10 per type. Snippets extracted with context around matches.
+2. **GIN Indexes**: Added `GinIndex(SearchVector(...))` to `Article` (title+content), `Lesson` (title+content), `PracticeQuestion` (title+prompt), `Conference` (name+city+country). Migrations: `news/0005`, `curriculum/0008`, `directory/0002`.
+3. **Junior Safety**: JR users only see articles with `is_junior_safe=True`. Only approved articles are searchable.
+4. **Navbar Search** (`Navbar.tsx`): Search icon expands into dropdown input with 300ms debounced API calls. Shows results grouped by type (max 3 per type) with "View all results" link.
+5. **Search Results Page** (`/search?q=<query>`): Full page with tabs for each content type, highlighted matching text, result counts per tab.
+6. **URL Routing**: `path('api/search/', global_search)` in `core/urls.py`.
+**Why:** Users had no way to find content across the platform. PostgreSQL full-text search avoids external dependencies (Elasticsearch) while providing ranked results, stemming, and natural language queries.
+**Rule:**
+- When adding new searchable models, add a `GinIndex(SearchVector(...))` and a `_search_<type>` helper in `core/views.py`.
+- Search endpoint is `AllowAny` — anonymous users can search, but JR filtering applies to authenticated JR users.
+- Always filter articles by `status='APPROVED'` in search results.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 

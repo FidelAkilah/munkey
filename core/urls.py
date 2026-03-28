@@ -24,6 +24,7 @@ from django.conf.urls.static import static
 from core.views import (
     ThrottledTokenObtainPairView,
     ThrottledTokenRefreshView,
+    global_search,
 )
 
 urlpatterns = [
@@ -33,6 +34,8 @@ urlpatterns = [
     path('auth/jwt/refresh/', ThrottledTokenRefreshView.as_view(), name='jwt-refresh'),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
+    # Global search
+    path('api/search/', global_search, name='global-search'),
     # Modular Routing
     path('api/users/', include('accounts.urls')),
     path('api/news/', include('news.urls')),

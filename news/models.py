@@ -1,3 +1,5 @@
+from django.contrib.postgres.indexes import GinIndex
+from django.contrib.postgres.search import SearchVector
 from django.db import models
 from accounts.models import User
 
@@ -32,5 +34,8 @@ class Article(models.Model):
     is_junior_safe = models.BooleanField(default=True)
 
     class Meta:
-        ordering = ['-created_at'] # Newest first
+        ordering = ['-created_at']  # Newest first
+        indexes = [
+            GinIndex(SearchVector('title', 'content', config='english'), name='article_search_idx'),
+        ]
 
