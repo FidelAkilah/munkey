@@ -82,3 +82,14 @@ There are exactly 6 curriculum categories. Do not add or rename them without upd
 - `AllowAny` permission — anonymous users can search
 - When adding a new searchable model: add `GinIndex(SearchVector(...))` in model Meta, create a `_search_<type>` helper in `core/views.py`, add the type to the dispatch map in `global_search`
 - Frontend: Navbar dropdown (300ms debounce) + `/search` results page with tabs per content type
+
+## Notifications
+- Model in `notifications/models.py` — types: `ARTICLE_APPROVED`, `ARTICLE_REJECTED`, `NEW_COMMENT`, `AI_FEEDBACK_READY`, `STREAK_MILESTONE`, `SYSTEM`
+- Use `notify()` helper from `notifications/helpers.py` to create notifications — never create `Notification` objects directly in views
+- Triggers are all in `notifications/signals.py`:
+  - `post_save` on `AIFeedback` → notifies user of score + checks streak milestones (7/14/30/60/100 days)
+  - `pre_save` + `post_save` on `Article` → notifies author on PENDING→APPROVED or PENDING→REJECTED only
+  - `post_save` on `Comment` → notifies article author (skips self-comments)
+- API endpoints: `GET /api/notifications/` (paginated), `PATCH /<id>/read/`, `POST /read-all/`, `GET /unread-count/`
+- Frontend polls `/unread-count/` every 60 seconds for the badge
+- When adding new notification types: add to `Notification.Type` choices, add signal, update icon maps in Navbar (`notifIcons`) and `/notifications` page (`NOTIF_ICONS`)

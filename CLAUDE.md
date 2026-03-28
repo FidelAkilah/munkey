@@ -57,6 +57,7 @@ curriculum/      → DiplomAI learning platform (AI feedback, chat, questions, A
 directory/       → MUN conference locations (lat/long for maps)
 frontend/        → Next.js 16 SPA (src/app/ file-based routing)
 news/            → Article posting with admin approval workflow
+notifications/   → In-app notification system (signals, bell icon, polling)
 skills/          → YouTube skill video categories & tutorials
 ```
 
@@ -68,6 +69,7 @@ frontend/src/
 │   ├── curriculum/     → Learning platform pages
 │   ├── dashboard/      → Progress dashboard (recharts, radar/line charts)
 │   ├── news/           → Article pages
+│   ├── notifications/  → Notifications history page
 │   ├── search/         → Search results page with tabs
 │   ├── skills/         → Video tutorial pages
 │   └── api/auth/       → NextAuth credential provider
@@ -146,6 +148,16 @@ All API endpoints are rate-limited via DRF throttling (`core/throttling.py`):
 - Backend implementation in `core/views.py` (`global_search` + `_search_*` helpers)
 - Frontend: Navbar search dropdown (debounced 300ms) + full `/search` results page with tabs
 - When adding searchable models: add GIN index, add `_search_<type>` helper in `core/views.py`
+
+## Notifications
+
+- Model in `notifications/models.py` with types: ARTICLE_APPROVED, ARTICLE_REJECTED, NEW_COMMENT, AI_FEEDBACK_READY, STREAK_MILESTONE, SYSTEM
+- Triggers via Django signals in `notifications/signals.py` — fires on AIFeedback creation, Article status change (PENDING→APPROVED/REJECTED), Comment creation
+- Helper: `notify()` in `notifications/helpers.py` — use this to create notifications
+- API endpoints under `/api/notifications/`: list (paginated), `<id>/read/`, `read-all/`, `unread-count/`
+- Frontend: Bell icon in Navbar with unread badge, dropdown panel, polls every 60s
+- Full notifications page at `/notifications` with all/unread filter
+- When adding new notification types: update `Notification.Type` choices, add signal/trigger, update `notifIcons` in Navbar and `NOTIF_ICONS` in notifications page
 
 ## Rules
 

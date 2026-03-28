@@ -18,6 +18,17 @@ interface ExtendedUser {
   accessToken?: string;
 }
 
+interface NotifItem {
+  id: number;
+  type: string;
+  type_display: string;
+  title: string;
+  message: string;
+  is_read: boolean;
+  link: string;
+  created_at: string;
+}
+
 interface SearchResult {
   id: number;
   title?: string;
@@ -38,6 +49,9 @@ export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Record<string, SearchResult[]>>({});
   const [searchLoading, setSearchLoading] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifications, setNotifications] = useState<NotifItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
@@ -81,6 +95,54 @@ export default function Navbar() {
   useEffect(() => {
     if (searchOpen && searchInputRef.current) searchInputRef.current.focus();
   }, [searchOpen]);
+
+  // Notification polling
+  useEffect(() => {
+    if (!accessToken) return;
+    const headers = { 'Authorization': `Bearer ${accessToken}` };
+    const fetchNotifs = () => {
+      fetch(`${API_BASE}/api/notifications/?page_size=10`, { headers })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data) setNotifications(Array.isArray(data) ? data : data.results || []);
+        })
+        .catch(() => {});
+      fetch(`${API_BASE}/api/notifications/unread-count/`, { headers })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => { if (data) setUnreadCount(data.count); })
+        .catch(() => {});
+    };
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 60000);
+    return () => clearInterval(interval);
+  }, [accessToken]);
+
+  const markAsRead = (id: number) => {
+    if (!accessToken) return;
+    fetch(`${API_BASE}/api/notifications/${id}/read/`, {
+      method: 'PATCH',
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    }).then(() => {
+      setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, is_read: true } : n));
+      setUnreadCount((c) => Math.max(0, c - 1));
+    }).catch(() => {});
+  };
+
+  const markAllRead = () => {
+    if (!accessToken) return;
+    fetch(`${API_BASE}/api/notifications/read-all/`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    }).then(() => {
+      setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+      setUnreadCount(0);
+    }).catch(() => {});
+  };
+
+  const notifIcons: Record<string, string> = {
+    ARTICLE_APPROVED: '✅', ARTICLE_REJECTED: '📝', NEW_COMMENT: '💬',
+    AI_FEEDBACK_READY: '🤖', STREAK_MILESTONE: '🔥', SYSTEM: '📢',
+  };
 
   const totalResults = Object.values(searchResults).reduce((sum, arr) => sum + arr.length, 0);
 
@@ -248,6 +310,101 @@ export default function Navbar() {
               )}
             </AnimatePresence>
           </div>
+
+          {/* Notifications Bell */}
+          {isAuthenticated && (
+            <div className="relative">
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors relative"
+                aria-label="Notifications"
+              >
+                <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {notifOpen && (
+                  <>
+                    <div className="fixed inset-0 z-10" onClick={() => setNotifOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-xl shadow-xl border border-slate-200 z-20 origin-top-right"
+                    >
+                      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                        <h3 className="text-sm font-bold text-slate-800">Notifications</h3>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllRead}
+                            className="text-xs font-semibold text-[#C66810] hover:text-[#A05200] transition-colors"
+                          >
+                            Mark all as read
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="max-h-80 overflow-y-auto">
+                        {notifications.length === 0 ? (
+                          <div className="px-4 py-8 text-center">
+                            <p className="text-sm text-slate-500">No notifications yet</p>
+                          </div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <Link
+                              key={notif.id}
+                              href={notif.link || '/notifications'}
+                              onClick={() => {
+                                if (!notif.is_read) markAsRead(notif.id);
+                                setNotifOpen(false);
+                              }}
+                              className={`flex items-start gap-3 px-4 py-3 hover:bg-orange-50 transition-colors border-b border-slate-50 ${
+                                !notif.is_read ? 'bg-orange-50/50' : ''
+                              }`}
+                            >
+                              <span className="text-base mt-0.5">{notifIcons[notif.type] || '📢'}</span>
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <p className={`text-sm truncate ${!notif.is_read ? 'font-bold text-slate-900' : 'font-medium text-slate-700'}`}>
+                                    {notif.title}
+                                  </p>
+                                  {!notif.is_read && (
+                                    <span className="w-2 h-2 bg-[#C66810] rounded-full shrink-0" />
+                                  )}
+                                </div>
+                                <p className="text-xs text-slate-500 line-clamp-2 mt-0.5">{notif.message}</p>
+                                <p className="text-[10px] text-slate-400 mt-1">
+                                  {new Date(notif.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                              </div>
+                            </Link>
+                          ))
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-100">
+                        <Link
+                          href="/notifications"
+                          onClick={() => setNotifOpen(false)}
+                          className="block px-4 py-2.5 text-sm font-semibold text-[#C66810] hover:bg-orange-50 transition-colors text-center"
+                        >
+                          View all notifications
+                        </Link>
+                      </div>
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
 
           {isAuthenticated && (
             <Link

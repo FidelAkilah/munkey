@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'skills',
     'curriculum',
+    'notifications',
 ]
 
 # OpenAI API Key for DiplomAI

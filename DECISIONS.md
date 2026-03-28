@@ -177,6 +177,33 @@ This is a living history of significant bugs, fixes, and architectural decisions
 
 ---
 
+## 2026-03-28 — Notification System
+
+**Issue:** Users had no way to know when their article was approved/rejected, when someone commented on their article, when AI feedback was ready, or when they hit streak milestones.
+**Decision:** Created a full notification system with a `notifications` Django app, signals-based triggers, REST API endpoints, and a frontend bell icon with dropdown + dedicated page.
+**What changed:**
+1. **Notification Model** (`notifications/models.py`): `recipient` (FK User), `type` (enum: ARTICLE_APPROVED, ARTICLE_REJECTED, NEW_COMMENT, AI_FEEDBACK_READY, STREAK_MILESTONE, SYSTEM), `title`, `message`, `is_read`, `link`, `created_at`. Indexed on `(recipient, -created_at)` and `(recipient, is_read)`.
+2. **Django Signals** (`notifications/signals.py`):
+   - `post_save` on `AIFeedback` → notifies user of score
+   - `post_save` on `AIFeedback` → checks streak milestones (7, 14, 30, 60, 100 days)
+   - `pre_save` + `post_save` on `Article` → notifies author on PENDING→APPROVED or PENDING→REJECTED transitions only
+   - `post_save` on `Comment` → notifies article author (not self-comments)
+3. **API Endpoints** (under `/api/notifications/`):
+   - `GET /` — paginated list (20/page), newest first
+   - `PATCH /<id>/read/` — mark single as read
+   - `POST /read-all/` — mark all as read
+   - `GET /unread-count/` — `{"count": N}` for badge
+4. **Frontend Navbar**: Bell icon with red unread badge, dropdown with recent notifications, "Mark all as read" button. Polls every 60 seconds.
+5. **Notifications Page** (`/notifications`): Full page with all/unread filter, load more pagination, animated list.
+**Why:** Notifications close the feedback loop — users know immediately when their work is reviewed, approved, or discussed, which drives engagement and reduces the time between action and feedback.
+**Rule:**
+- Use `notify()` helper from `notifications/helpers.py` to create notifications — never create `Notification` objects directly.
+- Article status notifications use `pre_save` to capture old status and only fire on PENDING→APPROVED/REJECTED transitions to avoid duplicates.
+- When adding new notification types, add to `Notification.Type` choices, update `notifIcons` in Navbar and `NOTIF_ICONS` in the notifications page.
+- Migration `notifications/0001_initial`.
+
+---
+
 <!-- Add new entries above this line. Format:
 ## YYYY-MM-DD — Short Title
 
